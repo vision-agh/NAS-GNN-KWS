@@ -1,5 +1,4 @@
-root: '/home/lsriw/Code/GNN-Audio'
-name: 'verification'
+dataset_folder: '/home/imperator/Datasets/NAS_GSC/dataset/verification'
 
 time_window: 1_000_000
 num_channels: 64

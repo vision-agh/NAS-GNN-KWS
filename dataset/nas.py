@@ -69,6 +69,13 @@ class SpikingDS(Dataset):
         pos[:, 0] = torch.round(pos[:, 0])
         pos = pos[pos[:, 0] < self.time_window]
 
+        # TO CHECK
+        n = pos.shape[0]
+        if n > 1:
+            idx = torch.randperm(n)[: n // 2]
+            idx = idx.sort().values
+            pos = pos[idx]
+
         # ---------------- COCHLEA FILTERING ----------------
         if self.config.cochlea == 'left':
             pos = pos[pos[:, 1] < self.num_channels * 2]
@@ -85,6 +92,11 @@ class SpikingDS(Dataset):
 
         # ---------------- EDGE GENERATION ------------------
         edge_index, x, pos = self.edge_gen.generate_edges(pos[:, 0], pos[:, 1], polarity_feat)
+
+
+        pos[:, 0] = pos[:, 0] / self.time_window
+        pos[:, 1] = pos[:, 1] / self.num_channels
+
         return {'x': x,
                 'pos': pos,
                 'edge_index': edge_index,
@@ -223,9 +235,9 @@ class SpikingDS(Dataset):
         # return data
 
 
-
 if __name__ == '__main__':
     import yaml
+    import matplotlib.pyplot as plt
     from omegaconf import OmegaConf
 
     cfg = OmegaConf.load("configs/dataset.yaml")
@@ -236,3 +248,5 @@ if __name__ == '__main__':
         print("Edges:", edge.shape)
         print("X:", x.shape)
         print("Pos:", pos.shape)
+        plt.scatter(pos[:, 0].numpy(), pos[:, 1].numpy(), s=0.1)
+        plt.show()
