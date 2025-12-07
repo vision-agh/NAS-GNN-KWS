@@ -1,14 +1,30 @@
+import re
 import torch
 import edge_generator
 import cv2
 import numpy as np
 
 from torch.utils.data import Dataset
-from utils.detective_active_range import detect_active_range
-from utils.nas_loader import nas_loader
-from utils.nas_settings import settings
+from dataset.utils.detective_active_range import detect_active_range
+from dataset.utils.nas_loader import nas_loader
+from dataset.utils.nas_settings import settings
 
-    
+
+WORDS = [
+    "yes",
+    "no",
+    "up",
+    "down",
+    "left",
+    "right",
+    "on",
+    "off",
+    "stop",
+    "go",
+]
+
+WORD_TO_CLASS = {w: i for i, w in enumerate(WORDS)}
+
 class SpikingDS(Dataset):
     def __init__(self,
                  files,
@@ -45,6 +61,8 @@ class SpikingDS(Dataset):
     
     def __getitem__(self, index):
         data_file = self.files[index]
+        y = self.filename_to_class(data_file.split('/')[-1])
+
         addr, ts = nas_loader(data_file, self.nas_settings)
 
         pos = torch.from_numpy(np.column_stack((ts, addr))).float()
@@ -67,9 +85,21 @@ class SpikingDS(Dataset):
 
         # ---------------- EDGE GENERATION ------------------
         edge_index, x, pos = self.edge_gen.generate_edges(pos[:, 0], pos[:, 1], polarity_feat)
-        return edge_index, x, pos
+        return {'x': x,
+                'pos': pos,
+                'edge_index': edge_index,
+                'y': y,
+                'file': data_file}
 
     
+    def filename_to_class(self, fname):
+        match = re.match(r"([a-z]+)\d+", fname.lower())
+        if not match:
+            return None
+
+        word = match.group(1)
+        return WORD_TO_CLASS.get(word)
+
     def decode_event(self, addr):
         # cochlea selection
         coch = 0 if addr < (self.num_channels * 2) else 1

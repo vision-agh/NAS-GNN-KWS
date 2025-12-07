@@ -1,18 +1,9 @@
-import aedat
-import numpy as np
-import math
-import matplotlib.pyplot as plt
-from dataset.utils.nas_settings import settings
-from dataset.utils.nas_loader import nas_loader
+import os, glob
+from omegaconf import OmegaConf
+from dataset.nas import SpikingDS
 
-# file = 'verification/down0001.wav.aedat'
-file = 'verification/up0001.wav.aedat'
-# file = 'verification/go0001.wav.aedat'
-# file = 'verification/left0001.wav.aedat'
-# file = 'verification/right0001.wav.aedat'
+files = glob.glob('/home/imperator/Datasets/NAS_GSC/dataset/verification/*')
+cfg = OmegaConf.load("configs/dataset.yaml")
 
-addresses, timestamps = nas_loader(file, settings=settings)
+ds = SpikingDS(files, cfg)
 
-print(len(addresses))
-plt.scatter(timestamps, addresses, s=0.1)
-plt.show()
