@@ -35,25 +35,32 @@ class SpikingDS(Dataset):
         self.config = config
         self.files = files
 
-        self.time_window = config.time_window
-        self.num_channels = config.num_channels
-
-        self.time_radius = config.time_radius
-        self.channel_radius = config.channel_radius
-        self.skip_channels = config.skip_channels
-
         self.polarity = config.polarity
         self.stereo = config.stereo
         self.cochlea = config.cochlea
+
+        self.num_channels = config.num_channels
+        self.channel_radius = config.channel_radius
+        self.low_time_radius = config.low_time_radius
+        self.high_time_radius = config.high_time_radius
+        self.time_leaky = config.time_leaky
+        self.norm_channel_filter = config.norm_channel_filter
+        self.threshold = config.threshold
+        self.time_window = config.time_window
+        self.skip_channels = config.skip_channels
         self.features_aggregation = config.features_aggregation
         
         self.nas_settings = settings
 
         self.edge_gen = edge_generator.EdgeGenerator(self.config.num_channels * (1 + self.polarity) * (1 + self.stereo), 
                                                         self.config.channel_radius, 
-                                                        self.config.time_radius, 
-                                                        self.config.time_window, 
-                                                        self.config.skip_channels, 
+                                                        self.config.low_time_radius,
+                                                        self.config.high_time_radius,
+                                                        self.config.time_leaky, 
+                                                        self.config.norm_channel_filter,
+                                                        self.config.threshold,
+                                                        self.config.time_window,
+                                                        self.config.skip_channels,
                                                         self.config.features_aggregation)
 
     def __len__(self) -> int:
@@ -67,7 +74,7 @@ class SpikingDS(Dataset):
 
         pos = torch.from_numpy(np.column_stack((ts, addr))).float()
         pos[:, 0] = torch.round(pos[:, 0])
-        pos = pos[pos[:, 0] < self.time_window * 10]
+        pos = pos[pos[:, 0] < self.time_window]
 
         # ---------------- COCHLEA FILTERING ----------------
         if self.config.cochlea == 'left':

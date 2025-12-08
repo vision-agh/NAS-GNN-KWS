@@ -1,12 +1,19 @@
 dataset_folder: '/home/lsriw/Datasets/NAS_GSC/dataset/verification'
 
-time_window: 1_000_000
-num_channels: 64
+num_channels: 64                # Number of cochlea channels
+
+channel_radius: 10              # Channel distance radius in graph construction
+low_time_radius: 2_000          # Inner time radius in microseconds         (0 - no inner radius)
+high_time_radius: 4_000         # Outer time radius in microseconds
+
+time_leaky: 1500                # Leaky factor for time radius
+norm_channel_filter: 10         # Normalization factor for channel distance in graph construction
+threshold: 3                    # Threshold for potential filtering           (0 - no filtering)
+
+time_window: 1_500_000          # Time window in microseconds for event selection
+skip_channels: 1                # Number of channels to skip from each side       (1 - no skipping)
+features_aggregation: global    # local, global or None
+
 polarity: True                  # {True, False} if True - 2 x num_channels, False - num_channels
 stereo: False                   # {True, False} if True - we use stereo, False- we use mono
 cochlea: left                   # {'left', 'right', 'both'}
-
-time_radius: 4_000
-channel_radius: 10
-skip_channels: 1                # 1 - we do not use skip channels method
-features_aggregation: global    # local, global or None
