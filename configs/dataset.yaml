@@ -1,4 +1,4 @@
-dataset_folder: '/home/imperator/Datasets/NAS_GSC/dataset/verification'
+dataset_folder: '/home/lsriw/Datasets/NAS_GSC/dataset/verification'
 
 time_window: 1_000_000
 num_channels: 64
@@ -6,7 +6,7 @@ polarity: True                  # {True, False} if True - 2 x num_channels, Fals
 stereo: False                   # {True, False} if True - we use stereo, False- we use mono
 cochlea: left                   # {'left', 'right', 'both'}
 
-time_radius: 10_000
+time_radius: 4_000
 channel_radius: 10
 skip_channels: 1                # 1 - we do not use skip channels method
 features_aggregation: global    # local, global or None

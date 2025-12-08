@@ -6,16 +6,31 @@ from omegaconf import OmegaConf
 from dataset.nas import SpikingDS
 
 files = glob.glob(
-    '/home/imperator/Datasets/NAS_GSC/dataset/verification/*'
+    '/home/lsriw/Datasets/NAS_GSC/dataset/verification/*'
 )
-random.shuffle(files)
-
 cfg = OmegaConf.load("configs/dataset.yaml")
 ds = SpikingDS(files, cfg)
 
 for data in ds:
-    edge, pos = data['edge_index'], data['pos']
-    print("Edges:", edge.shape)
+    edge_index, pos, y = data['edge_index'], data['pos'], data['y']
+    times = pos[:, 0].cpu().numpy()
+    channels = pos[:, 1].cpu().numpy()
+
+    print("Edges:", edge_index.shape)
     print("Pos:", pos.shape)
-    plt.scatter(pos[:, 0].numpy(), pos[:, 1].numpy(), s=0.1)
+    print("Y:", y)
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    plt.scatter(pos[:, 0].numpy(), pos[:, 1].numpy(), s=3)
+    edges = edge_index.cpu().numpy()  # shape (E, 2)
+
+    for src, dst in edges:
+        t1, c1 = times[src], channels[src]
+        t2, c2 = times[dst], channels[dst]
+
+        # skip self-loop lines (but you can enable)
+        if src == dst:
+            continue
+
+        ax.plot([t1, t2], [c1, c2], linewidth=0.4, alpha=0.4, color='red')
     plt.show()

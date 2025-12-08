@@ -67,14 +67,7 @@ class SpikingDS(Dataset):
 
         pos = torch.from_numpy(np.column_stack((ts, addr))).float()
         pos[:, 0] = torch.round(pos[:, 0])
-        pos = pos[pos[:, 0] < self.time_window]
-
-        # TO CHECK
-        n = pos.shape[0]
-        if n > 1:
-            idx = torch.randperm(n)[: n // 2]
-            idx = idx.sort().values
-            pos = pos[idx]
+        pos = pos[pos[:, 0] < self.time_window * 10]
 
         # ---------------- COCHLEA FILTERING ----------------
         if self.config.cochlea == 'left':
@@ -96,6 +89,10 @@ class SpikingDS(Dataset):
 
         pos[:, 0] = pos[:, 0] / self.time_window
         pos[:, 1] = pos[:, 1] / self.num_channels
+
+        
+        if pos.shape[0] < 2:
+            return self.__getitem__((index + 1) % len(self))
 
         return {'x': x,
                 'pos': pos,
