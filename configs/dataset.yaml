@@ -2,7 +2,7 @@ dataset_folder: '/home/lsriw/Datasets/NAS_GSC/dataset/verification'
 
 num_channels: 64                # Number of cochlea channels
 
-channel_radius: 10              # Channel distance radius in graph construction
+channel_radius: 20              # Channel distance radius in graph construction
 low_time_radius: 2_000          # Inner time radius in microseconds         (0 - no inner radius)
 high_time_radius: 4_000         # Outer time radius in microseconds
 

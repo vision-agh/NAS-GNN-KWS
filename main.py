@@ -10,11 +10,23 @@ from models.networks.recognition import Recognition
 from utils.collate_fn import collate_fn
 
 # -------------------------------------------------
+# 0. Training config (CHANGE HERE)
+# -------------------------------------------------
+OPTIMIZER_TYPE = "adam"   # "adam" or "sgd"
+LR = 1e-3
+WEIGHT_DECAY = 1e-4
+
+USE_COSINE_SCHEDULER = True
+EPOCHS = 100
+SGD_MOMENTUM = 0.9
+
+# -------------------------------------------------
 # 1. Reproducibility
 # -------------------------------------------------
 SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)
+torch.cuda.manual_seed_all(SEED)
 
 # -------------------------------------------------
 # 2. Files & split
@@ -48,7 +60,7 @@ train_dl = DataLoader(
     train_ds,
     batch_size=4,
     shuffle=True,
-    num_workers=2,
+    num_workers=4,
     pin_memory=True,
     persistent_workers=True,
     collate_fn=collate_fn
@@ -58,7 +70,7 @@ test_dl = DataLoader(
     test_ds,
     batch_size=4,
     shuffle=False,
-    num_workers=2,
+    num_workers=4,
     pin_memory=True,
     persistent_workers=True,
     collate_fn=collate_fn
@@ -73,10 +85,42 @@ print("Using device:", device)
 model = Recognition(cfg_model).to(device)
 
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
 # -------------------------------------------------
-# 6. Helper: move batch to device
+# 6. Optimizer
+# -------------------------------------------------
+if OPTIMIZER_TYPE.lower() == "adam":
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=LR,
+        weight_decay=WEIGHT_DECAY
+    )
+elif OPTIMIZER_TYPE.lower() == "sgd":
+    optimizer = torch.optim.SGD(
+        model.parameters(),
+        lr=LR,
+        momentum=SGD_MOMENTUM,
+        weight_decay=WEIGHT_DECAY
+    )
+else:
+    raise ValueError(f"Unknown optimizer: {OPTIMIZER_TYPE}")
+
+print(f"Using optimizer: {OPTIMIZER_TYPE}")
+
+# -------------------------------------------------
+# 7. Scheduler (Cosine)
+# -------------------------------------------------
+scheduler = None
+if USE_COSINE_SCHEDULER:
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        T_max=EPOCHS,
+        eta_min=1e-6
+    )
+    print("Using CosineAnnealingLR")
+
+# -------------------------------------------------
+# 8. Helper: move batch to device
 # -------------------------------------------------
 def move_to_device(batch):
     return {
@@ -86,9 +130,8 @@ def move_to_device(batch):
     }
 
 # -------------------------------------------------
-# 7. Sanity check (DO THIS ONCE)
+# 9. Sanity check (DO THIS ONCE)
 # -------------------------------------------------
-
 batch = next(iter(train_dl))
 batch = move_to_device(batch)
 
@@ -103,10 +146,8 @@ with torch.no_grad():
 print("logits:", out.shape)
 
 # -------------------------------------------------
-# 8. Training loop
+# 10. Training loop
 # -------------------------------------------------
-EPOCHS = 50
-
 for epoch in range(EPOCHS):
     # -------------------------
     # Train
@@ -116,13 +157,11 @@ for epoch in range(EPOCHS):
     correct = 0
     total = 0
 
-    for batch in tqdm(train_dl):
+    for batch in tqdm(train_dl, desc=f"Train {epoch:02d}"):
         batch = move_to_device(batch)
 
         optimizer.zero_grad()
-
         logits = model(batch)
-
         loss = criterion(logits, batch["y"])
         loss.backward()
         optimizer.step()
@@ -136,6 +175,12 @@ for epoch in range(EPOCHS):
     train_acc  = correct / total
 
     # -------------------------
+    # Scheduler step
+    # -------------------------
+    if scheduler is not None:
+        scheduler.step()
+
+    # -------------------------
     # Evaluate
     # -------------------------
     model.eval()
@@ -143,26 +188,26 @@ for epoch in range(EPOCHS):
     total = 0
 
     with torch.no_grad():
-        for batch in tqdm(test_dl):
+        for batch in tqdm(test_dl, desc=f"Test  {epoch:02d}"):
             batch = move_to_device(batch)
-
             logits = model(batch)
-
             preds = logits.argmax(dim=1)
             correct += (preds == batch["y"]).sum().item()
             total += batch["y"].size(0)
 
     test_acc = correct / total
+    current_lr = optimizer.param_groups[0]["lr"]
 
     print(
         f"Epoch {epoch:02d} | "
+        f"LR {current_lr:.2e} | "
         f"Train loss: {train_loss:.4f} | "
         f"Train acc: {train_acc:.3f} | "
         f"Test acc: {test_acc:.3f}"
     )
 
 # -------------------------------------------------
-# 9. Save model
+# 11. Save model
 # -------------------------------------------------
 torch.save(model.state_dict(), "recognition_baseline.pth")
 print("Model saved.")
