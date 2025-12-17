@@ -201,7 +201,6 @@ module top #(
         .in_features ( features_to_head ),
         .out_conf    ( out_conf         ),
         .out_cls     ( out_cls_type     ),
-        //.out_cls     ( out_cls          ),
         .out_valid   ( out_valid        )
      );
 

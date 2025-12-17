@@ -61,7 +61,7 @@ module edges_gen #(
     assign web  = (counter == F_RADIUS) && state==GGEN;
 
     assign addra = in_event.f + counter*SKIP_STEP;
-    assign addrb = in_event.f - 100 + (counter*SKIP_STEP);
+    assign addrb = in_event.f - (NUM_CHANNEL*SKIP_STEP) + (counter*SKIP_STEP);
 
     assign condition_a = (addra >= 0) && (addra < NUM_CHANNEL);
     assign condition_b = (addrb >= 0) && (addrb < NUM_CHANNEL);
@@ -104,11 +104,11 @@ module edges_gen #(
             counter_reg <= counter;
             condition_a_reg <= condition_a;
             condition_b_reg <= condition_b;
-            
+
             // Port A
             edges_reg[counter_reg].dt            <= in_event_reg.t - douta[DWIDTH-1:1];
             edges_reg[counter_reg].is_connected  <= douta[0] && condition_a_reg && ((in_event_reg.t - douta[DWIDTH-1:1]) < T_RADIUS);
-    
+
             // Port B (ON counter F_RADIUS we do write on B)
             if (counter_reg != F_RADIUS) begin
                 edges_reg[F_RADIUS+1+counter_reg].dt            <= in_event_reg.t - doutb[DWIDTH-1:1];
