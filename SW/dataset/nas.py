@@ -7,23 +7,26 @@ import numpy as np
 from torch.utils.data import Dataset
 from dataset.utils.detective_active_range import detect_active_range
 from dataset.utils.nas_loader import nas_loader
-from dataset.utils.nas_settings import settings
+from configs.nas_settings import settings
 
 
-WORDS = [
-    "yes",
-    "no",
-    "up",
-    "down",
-    "left",
-    "right",
-    "on",
-    "off",
-    "stop",
-    "go",
+WORDS_COMM = [
+    "yes", "no", "up", "down", "left",
+    "right", "on", "off", "stop", "go", "unknown"
 ]
 
-WORD_TO_CLASS = {w: i for i, w in enumerate(WORDS)}
+WORDS_ALL = [
+    "backward", "bed", "bird", "cat", "dog",
+    "down", "eight", "five", "follow", "forward",
+    "four", "go", "happy", "house", "learn",
+    "left", "marvin", "nine", "no", "off",
+    "on", "one",  "right", "seven", "sheila",
+    "six", "stop", "three",  "tree", "two",
+    "up", "visual", "wow", "yes", "zero"
+]
+
+WORD_COMM_TO_CLASS = {w: i for i, w in enumerate(WORDS_COMM)}
+WORD_ALL_TO_CLASS = {w: i for i, w in enumerate(WORDS_ALL)}
 
 class SpikingDS(Dataset):
     def __init__(self,
@@ -34,6 +37,7 @@ class SpikingDS(Dataset):
         self.train = train
         self.config = config
         self.files = files
+        self.version = config.version
 
         self.polarity = config.polarity
         self.stereo = config.stereo
@@ -68,7 +72,7 @@ class SpikingDS(Dataset):
     
     def __getitem__(self, index):
         data_file = self.files[index]
-        y = self.filename_to_class(data_file.split('/')[-1])
+        y = self.filename_to_class(data_file)
 
         addr, ts = nas_loader(data_file, self.nas_settings)
 
@@ -93,10 +97,8 @@ class SpikingDS(Dataset):
         # ---------------- EDGE GENERATION ------------------
         edge_index, x, pos = self.edge_gen.generate_edges(pos[:, 0], pos[:, 1], polarity_feat)
 
-
         pos[:, 0] = pos[:, 0] / self.time_window
-        pos[:, 1] = pos[:, 1] / self.num_channels
-
+        pos[:, 1] = pos[:, 1] / self.num_channels if not self.polarity else pos[:, 1] / (self.num_channels * 2)
         
         if pos.shape[0] < 2:
             return self.__getitem__((index + 1) % len(self))
@@ -109,12 +111,15 @@ class SpikingDS(Dataset):
 
     
     def filename_to_class(self, fname):
-        match = re.match(r"([a-z]+)\d+", fname.lower())
-        if not match:
-            return None
+        word = fname.split('/')[-2]
+        if self.version == 'commands':
+            if word not in WORD_COMM_TO_CLASS:
+                word = 'unknown'
 
-        word = match.group(1)
-        return WORD_TO_CLASS.get(word)
+        if self.version == 'commands':
+            return WORD_COMM_TO_CLASS.get(word)
+        else:
+            return WORD_ALL_TO_CLASS.get(word)
 
     def decode_event(self, addr):
         # cochlea selection

@@ -24,10 +24,14 @@ def nas_loader(file, settings):
     addresses = spikes['f0']
     timestamps = spikes['f1']
 
-    timestamps = timestamps - 200_000
+    # Normalize timestamps
+    timestamps = (timestamps - timestamps[0]) * settings.ts_tick
+
+    # Remove noise events that occur around 0-1000 microseconds
+    valid_indices = np.where(timestamps >= 1000)[0]
+    addresses = addresses[valid_indices]
+    timestamps = timestamps[valid_indices]
+
+    timestamps = timestamps - timestamps[0]
 
     return addresses, timestamps
-
-
-
-# 0 - negative polarti, 1 - postivie polarity, 2 - negative polarity, 3 - positive polarity and so on...

@@ -15,4 +15,4 @@ class MainSettings:
         self.verbose = verbose
 
 
-settings = MainSettings(num_channels=64, mono_stereo=1, on_off_both=1, address_size=2, timestamp_size=4, ts_tick=100)
+settings = MainSettings(num_channels=64, mono_stereo=1, on_off_both=1, address_size=2, timestamp_size=4, ts_tick=0.02)

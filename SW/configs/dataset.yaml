@@ -1,5 +1,6 @@
-dataset_folder: '/home/lsriw/Datasets/NAS_GSC/dataset/verification'
+# Dataset settings for NAS-GCN-KWS
 
+version: full                # Dataset version: commands (10+1 classes), full (35 classes)
 num_channels: 64                # Number of cochlea channels
 
 channel_radius: 20              # Channel distance radius in graph construction
