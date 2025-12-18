@@ -1,9 +1,11 @@
 import glob
 import random
 import torch
+import numpy as np
 from torch.utils.data import DataLoader
 from omegaconf import OmegaConf
 from tqdm import tqdm
+from pathlib import Path
 
 from dataset.nas import SpikingDS
 from models.networks.recognition import Recognition
@@ -32,17 +34,54 @@ torch.cuda.manual_seed_all(SEED)
 # 2. Files & split
 # -------------------------------------------------
 files = glob.glob(
-    '/home/lsriw/Datasets/NAS_GSC/dataset/verification/*'
+    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat/*/*"
 )
-random.shuffle(files)
 
-split_ratio = 0.8
-n_train = int(len(files) * split_ratio)
+# Load list entries like right/xxxx.wav
+testing_list = np.loadtxt(
+    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat/testing_list.txt",
+    dtype=str,
+)
+validation_list = np.loadtxt(
+    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat/validation_list.txt",
+    dtype=str,
+)
 
-train_files = files[:n_train]
-test_files  = files[n_train:]
+# Normalize to a set for fast lookup
+testing_set = set(testing_list)
+validation_set = set(validation_list)
 
-print(f"Train files: {len(train_files)} | Test files: {len(test_files)}")
+
+def file_key(path_str: str) -> str:
+    """
+    Returns key in form: class/file.wav
+    Given full file path .../class/file.wav.aedat
+    """
+    p = Path(path_str)
+    cls = p.parent.name  # e.g., right
+    stem = p.stem       # file.wav  (first stem strips .aedat)
+    return f"{cls}/{stem}"
+
+
+train_files = [
+    f for f in files
+    if file_key(f) not in testing_set
+    and file_key(f) not in validation_set
+]
+test_files = [
+    f for f in files
+    if file_key(f) in testing_set
+]
+val_files = [
+    f for f in files
+    if file_key(f) in validation_set
+]
+
+print(
+    f"Train files: {len(train_files)} | "
+    f"Test files: {len(test_files)} | "
+    f"Validation files: {len(val_files)}"
+)
 
 # -------------------------------------------------
 # 3. Dataset
@@ -52,6 +91,7 @@ cfg_model   = OmegaConf.load("configs/model.yaml")
 
 train_ds = SpikingDS(train_files, cfg_dataset)
 test_ds  = SpikingDS(test_files, cfg_dataset)
+val_ds   = SpikingDS(val_files, cfg_dataset)
 
 # -------------------------------------------------
 # 4. DataLoaders
@@ -68,6 +108,16 @@ train_dl = DataLoader(
 
 test_dl = DataLoader(
     test_ds,
+    batch_size=4,
+    shuffle=False,
+    num_workers=4,
+    pin_memory=True,
+    persistent_workers=True,
+    collate_fn=collate_fn
+)
+
+val_dl = DataLoader(
+    val_ds,
     batch_size=4,
     shuffle=False,
     num_workers=4,
@@ -188,14 +238,14 @@ for epoch in range(EPOCHS):
     total = 0
 
     with torch.no_grad():
-        for batch in tqdm(test_dl, desc=f"Test  {epoch:02d}"):
+        for batch in tqdm(val_dl, desc=f"Val   {epoch:02d}"):
             batch = move_to_device(batch)
             logits = model(batch)
             preds = logits.argmax(dim=1)
             correct += (preds == batch["y"]).sum().item()
             total += batch["y"].size(0)
 
-    test_acc = correct / total
+    val_acc = correct / total
     current_lr = optimizer.param_groups[0]["lr"]
 
     print(
@@ -203,7 +253,7 @@ for epoch in range(EPOCHS):
         f"LR {current_lr:.2e} | "
         f"Train loss: {train_loss:.4f} | "
         f"Train acc: {train_acc:.3f} | "
-        f"Test acc: {test_acc:.3f}"
+        f"Val acc: {val_acc:.3f}"
     )
 
 # -------------------------------------------------

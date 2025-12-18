@@ -1,5 +1,5 @@
 features: 2
-num_classes: 10
+num_classes: 35
 conv_channels: [64, 64, 64, 64]
 conv_bits: [16, 8, 8, 8]
 
