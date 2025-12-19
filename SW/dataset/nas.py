@@ -78,7 +78,7 @@ class SpikingDS(Dataset):
 
         pos = torch.from_numpy(np.column_stack((ts, addr))).float()
         pos[:, 0] = torch.round(pos[:, 0])
-        pos = pos[pos[:, 0] < self.time_window]
+        pos = pos[pos[:, 0] < 2 * self.time_window]
 
         # ---------------- COCHLEA FILTERING ----------------
         if self.config.cochlea == 'left':
@@ -88,7 +88,7 @@ class SpikingDS(Dataset):
         # 'both' keeps all
 
         if len(pos) == 0:
-            return None  # or handle empty window
+            return None # skip empty samples
 
         # ---------------- ADDRESS REMAPPING ----------------
         remapped_addr, polarity_feat = self.remap_addresses(pos[:, 1].long())
@@ -184,65 +184,6 @@ class SpikingDS(Dataset):
                 new_addr = new_addr + coch * self.num_channels
 
         return new_addr, polarity_feat
-
-
-
-
-
-        # data['pos'][:, 0] = torch.round(data['pos'][:, 0])                  # Round to nearest microsecond
-        # data['pos'] = data['pos'][data['pos'][:, 0] < self.time_window]     # Cut data to time window
-
-        # # Generate edge_index and features
-
-        # edge_index, x = self.edge_gen.generate_edges(data['pos'][:, 0], 
-        #                                             data['pos'][:, 1])
-        
-        # data['edge_index'] = edge_index
-        # data['x'] = x
-
-        # if self.config.general.name == 'Google_Speech_Commands' and \
-        #       self.config.model.num_classes == 11:
-        #     data['y'] = torch.tensor(label_map[int(data['y'].item())], dtype=torch.long)
-        
-        # # Normalise node positions
-        # data['pos'][:, 0] = data['pos'][:, 0] / self.time_window
-        # data['pos'][:, 1] = data['pos'][:, 1] / self.num_channels
-
-
-        # bin_width = 0.01
-        # bins = np.arange(0, 1 + bin_width, bin_width)
-        # hist, bin_edges = np.histogram(data['pos'][:, 0].cpu().numpy(), bins=bins)
-        # hist = hist.astype(np.float32)
-
-        # start_time, end_time, hist_smoothed = detect_active_range(hist, bin_edges)
-
-        # data['end_time'] = end_time  # seconds in range [0,1]
-
-        # # --- here we generate labels y ---
-        # T = int(1.0 / bin_width)      # num of bins = 100
-        # y = torch.zeros(T, dtype=torch.float32)
-        # cls = torch.zeros(T, dtype=torch.float32)
-
-        # if end_time is not None:
-        #     # index of bin, where words ends
-        #     bin_idx = int(end_time // bin_width)
-        #     if 0 <= bin_idx < T:
-        #         y[bin_idx] = 1.0
-        #         cls[bin_idx] = data['y']
-
-        #         if bin_idx + 1 < T:
-        #             y[bin_idx+1] = 0.5
-        #             cls[bin_idx+1] = data['y']
-
-        #         if bin_idx - 1 >= 0:
-        #             y[bin_idx-1] = 0.5
-        #             cls[bin_idx-1] = data['y']
-
-        # data['keyword'] = y
-        # data['cls'] = cls
-
-        # return data
-
 
 if __name__ == '__main__':
     import yaml
