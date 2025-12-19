@@ -20,16 +20,6 @@ module generate_graph #(
     event_type event_to_edges_gen,event_to_feature_gen;
     edge_type [MAX_EDGES-1 : 0] edges_to_feature_gen;
 
-    fifo_handler #() u_input_fifo (
-        .clk           ( clk                ),
-        .reset         ( reset              ),
-        .t             ( t                  ),
-        .f             ( f                  ),
-        .is_valid      ( is_valid           ),
-        // .is_last       ( is_last            ),
-        .out_event     ( event_to_edges_gen )
-    );
-
     edges_gen #() u_edges_gen (
         .clk           ( clk                  ),
         .reset         ( reset                ),

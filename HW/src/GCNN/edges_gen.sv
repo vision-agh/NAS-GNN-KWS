@@ -19,7 +19,7 @@ module edges_gen #(
         out_event <= '{default:0};
         out_edges <= '{default:0};
     end
-    
+
     logic [$clog2(F_RADIUS):0] counter, counter_reg;
     event_type in_event_reg; // fifo output
 
