@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-import graph_pkg::*;
+import nas_pkg::*;
 
 module edges_gen #(
     parameter int AWIDTH      = $clog2(NUM_CHANNEL), 
