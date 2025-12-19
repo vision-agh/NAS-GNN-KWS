@@ -25,7 +25,7 @@ module gcnn_top #(
 //   output logic                              out_valid
 );
 
-    localparam string MEMORY_DIR_PATH = "C:/Users/wikto/NAS_GCN_KWS/HW/mem/";
+    localparam string MEMORY_DIR_PATH = "../../mem/";
     localparam string INIT_PATH_CONV1 = {MEMORY_DIR_PATH, "conv1.mem"};
     localparam string INIT_PATH_CONV2 = {MEMORY_DIR_PATH, "conv2.mem"};
     localparam string INIT_PATH_CONV3 = {MEMORY_DIR_PATH, "conv3.mem"};
