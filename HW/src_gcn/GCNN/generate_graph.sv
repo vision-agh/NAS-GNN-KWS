@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-import graph_pkg::*;
+import nas_pkg::*;
 
 module generate_graph #(
 )( 
@@ -9,7 +9,7 @@ module generate_graph #(
     input  logic      [T_WIDTH-1: 0]      t,
     input  logic      [F_WIDTH-1: 0]      f,
     input  logic                          is_valid,
-    input  logic                          is_last,
+    // input  logic                          is_last,
 
     output event_type                     out_event,
     output edge_type  [MAX_EDGES-1 : 0]   out_edges,
@@ -26,7 +26,7 @@ module generate_graph #(
         .t             ( t                  ),
         .f             ( f                  ),
         .is_valid      ( is_valid           ),
-        .is_last       ( is_last            ),
+        // .is_last       ( is_last            ),
         .out_event     ( event_to_edges_gen )
     );
 

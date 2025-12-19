@@ -1,4 +1,4 @@
-package graph_pkg;
+package nas_pkg;
 
 
     parameter F_RADIUS   = 10; //Search radius will be F_RADIUS*SKIPSTEPS                    
@@ -14,7 +14,7 @@ package graph_pkg;
 
     parameter T_WIDTH  = 32; //Max of 1000000
     parameter T_DIFF_WIDTH  = 15; //Max of 20000
-    parameter F_WIDTH  = 10; //Max of 700
+    parameter F_WIDTH  = 7; //Max of 700
 
     parameter NUM_CHANNEL = 128;
 

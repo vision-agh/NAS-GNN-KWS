@@ -1,12 +1,12 @@
 `timescale 1ns / 1ps
 
-import graph_pkg::*;
+import nas_pkg::*;
 
 module gru_head #(
     parameter int PRECISION            = 8,
     parameter int CLS_NUM              = 20,
     parameter int HEAD_DIM             = 72,
-    parameter string INIT_PATH         = "/home/pwz/Repo/gcnn-audio-fpga/HW/mem/head.mem"
+    parameter string INIT_PATH         = "C:/Users/wikto/NAS_GCN_KWS/HW/mem/head.mem"
 )(
     input logic clk,
     input logic reset,

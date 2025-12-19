@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-import graph_pkg::*;
+import nas_pkg::*;
 
 module maxpool #(
     parameter int OUTPUT_DIM = OUTPUT_DIM_4,

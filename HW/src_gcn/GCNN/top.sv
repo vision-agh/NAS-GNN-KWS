@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-import graph_pkg::*;
+import nas_pkg::*;
 
 module top #(
 )( 
@@ -25,7 +25,7 @@ module top #(
 //   output logic                              out_valid
 );
 
-    localparam string MEMORY_DIR_PATH = "/home/pwz/Repo/gcnn-audio-fpga/HW/mem/";
+    localparam string MEMORY_DIR_PATH = "C:/Users/wikto/NAS_GCN_KWS/HW/mem/";
     localparam string INIT_PATH_CONV1 = {MEMORY_DIR_PATH, "conv1.mem"};
     localparam string INIT_PATH_CONV2 = {MEMORY_DIR_PATH, "conv2.mem"};
     localparam string INIT_PATH_CONV3 = {MEMORY_DIR_PATH, "conv3.mem"};
@@ -76,7 +76,7 @@ module top #(
         .t          ( t              ),
         .f          ( f              ),
         .is_valid   ( is_valid       ),
-        .is_last    ( is_last        ),
+        // .is_last    ( is_last        ),
         .out_event  ( event_to_conv1 ),
         .out_edges  ( edges_to_conv1 ),
         .t_feature  ( t_feature      ),

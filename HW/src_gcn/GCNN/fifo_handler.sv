@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-import graph_pkg::*;
+import nas_pkg::*;
 
 
 module fifo_handler #(
@@ -11,7 +11,7 @@ module fifo_handler #(
     input  logic signed     [T_WIDTH-1:0]     t,
     input  logic signed     [F_WIDTH-1:0]     f,
     input  logic                              is_valid,
-    input  logic                              is_last,
+    // input  logic                              is_last,
     output event_type                         out_event
 
 );
@@ -21,7 +21,8 @@ module fifo_handler #(
     logic [$clog2(THROUGHTPUT) : 0] counter;
     logic  [FIFO_WIDTH-1:0] din, dout;
 
-    assign din = {t, f, is_last};
+    // assign din = {t, f, is_last};
+    assign din = {t, f};
     assign wen = !full && is_valid;
 
     fifo_generator_0 fifo_0 (
@@ -65,6 +66,6 @@ module fifo_handler #(
     assign fifo_read = (counter == THROUGHTPUT) && !empty;
     assign out_event.t = dout[(T_WIDTH+F_WIDTH):F_WIDTH+1];
     assign out_event.f = dout[F_WIDTH:1];
-    assign out_event.is_last = dout[0];
+    // assign out_event.is_last = dout[0];
 
 endmodule
