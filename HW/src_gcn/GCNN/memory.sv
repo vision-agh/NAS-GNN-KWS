@@ -2,7 +2,7 @@
 
 //  Based on Language Templates - URAM/BRAM Memory
 //  Xilinx UltraRAM True Dual Port Mode.
-import graph_pkg::*;
+import nas_pkg::*;
 
 module memory #(
     parameter AWIDTH   = F_WIDTH,     // Address Width
