@@ -76,6 +76,7 @@ class SpikingDS(Dataset):
         remapped_addr, polarity_feat = self.remap_addresses(pos[:, 1].long())
         pos[:, 1] = remapped_addr
 
+
         # ---------------- EDGE GENERATION ------------------
         edge_index, x, pos = self.edge_gen.generate_edges(pos[:, 0], pos[:, 1], polarity_feat)
 
@@ -85,12 +86,20 @@ class SpikingDS(Dataset):
 
         if pos.shape[0] < 2:
             return self.__getitem__((index + 1) % len(self))
+        
+        # --------------- ACTIVE RANGE DETECTION ----------------
+        bins = np.arange(0, pos[:,0].max()+self.cfg.dataset.bin_width, self.cfg.dataset.bin_width)
+        hist, bin_edges = np.histogram(pos[:,0].numpy(), bins=bins)
+        start_time, end_time, hist_smoothed = detect_active_range(hist.astype(np.float32), bin_edges, self.cfg)
 
         return {'x': x,
                 'pos': pos,
                 'edge_index': edge_index,
                 'y': y,
-                'file': data_file}
+                'file': data_file,
+                'start_time': start_time,
+                'end_time': end_time,
+                'hist_smoothed': hist_smoothed}
 
     
     def filename_to_class(self, fname):

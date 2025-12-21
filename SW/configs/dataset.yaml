@@ -18,3 +18,11 @@ use_filtration: True            # Whether to use event filtration
 div_factor: 8                   # Division factor (2 ^ div_factor) for time normalization
 weight: 32                      # Weight for potential accumulation
 thresholds: None                # List of thresholds for event filtration, if None - automatic thresholding
+
+# active range detection settings
+bin_width: 0.01                 # Bin width in seconds for histogram computation
+cooldown_steps: 3               # Cooldown steps for active range detection
+mean_scale: 1.0                 # Mean scaling factor for active range detection high threshold
+std_scale: 0.5                  # Standard deviation scaling factor for active range detection high threshold
+low_percentage: 0.7             # Threshold_low = low_percentage * Threshold_high
+gausian_kernel_size: 7          # Kernel size for Gaussian smoothing in active range detection
