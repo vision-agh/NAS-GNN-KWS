@@ -92,14 +92,18 @@ class SpikingDS(Dataset):
         hist, bin_edges = np.histogram(pos[:,0].numpy(), bins=bins)
         start_time, end_time, hist_smoothed = detect_active_range(hist.astype(np.float32), bin_edges, self.cfg)
 
+        cls_vec, conf_vec = self.generate_kws_vectors(pos, end_time, y)
+
         return {'x': x,
                 'pos': pos,
                 'edge_index': edge_index,
                 'y': y,
-                'file': data_file,
+                'cls_vec': cls_vec,
+                'conf_vec': conf_vec,
                 'start_time': start_time,
                 'end_time': end_time,
-                'hist_smoothed': hist_smoothed}
+                'hist_smoothed': hist_smoothed,
+                'file': data_file}
 
     
     def filename_to_class(self, fname):
@@ -112,6 +116,28 @@ class SpikingDS(Dataset):
             return WORD_COMM_TO_CLASS.get(word)
         else:
             return WORD_ALL_TO_CLASS.get(word)
+        
+    def generate_kws_vectors(self, pos, end_time, cls):
+        T = int(pos[:, 0].max() / self.cfg.dataset.bin_width) + 1
+        cls_vec = torch.ones(T, dtype=torch.float32) * (36 if self.cfg.dataset.version == 'all' else 10)  # unknown class
+        conf_vec = torch.zeros(T, dtype=torch.float32)
+
+        if end_time is not None:
+            # index of bin, where words ends
+            bin_idx = int(end_time // self.cfg.dataset.bin_width)
+            if 0 <= bin_idx < T:
+                conf_vec[bin_idx] = 1.0
+                cls_vec[bin_idx] = cls
+
+                if bin_idx + 1 < T:
+                    conf_vec[bin_idx+1] = 0.5
+                    cls_vec[bin_idx+1] = cls
+
+                if bin_idx - 1 >= 0:
+                    conf_vec[bin_idx-1] = 0.5
+                    cls_vec[bin_idx-1] = cls
+
+        return cls_vec, conf_vec
 
     def decode_event(self, addr):
         # cochlea selection

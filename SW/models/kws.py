@@ -4,7 +4,7 @@ import torch
 import lightning as L
 from torch.nn import functional as F
 
-from models.networks.model import GCN
+from models.networks.kws import GCN
 
 
 class LNRecognition(L.LightningModule):

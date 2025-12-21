@@ -11,33 +11,33 @@ from models.layers.my_gru import MyGRU
 
 from utils.generate_outputs import conv_gen_out, conv_first_gen_out, graph_gen_out, vector_out
 
-class GCN(Module):
+class KWS(Module):
     def __init__(self, 
                  config):
-        super(GCN, self).__init__()
+        super(KWS, self).__init__()
         
         self.config = config
 
-        conv_ch = config.model.conv_channels
-        conv_bits = config.model.conv_bits
+        conv_ch = config.conv_channels
+        conv_bits = config.conv_bits
 
-        pooling_op = config.model.global_pooling
+        pooling_op = config.global_pooling
 
-        stem_ch = config.model.stem_channels
-        stem_bits = config.model.stem_bits
+        stem_ch = config.stem_channels
+        stem_bits = config.stem_bits
 
-        rnn_ch = config.model.rnn_channels
-        rnn_bits = config.model.rnn_bits
+        rnn_ch = config.rnn_channels
+        rnn_bits = config.rnn_bits
 
-        cls_linear_ch = config.model.cls_linear_channels
-        cls_linear_bits = config.model.cls_linear_bits
+        cls_linear_ch = config.cls_linear_channels
+        cls_linear_bits = config.cls_linear_bits
 
-        conf_linear_ch = config.model.conf_linear_channels
-        conf_linear_bits = config.model.conf_linear_bits
+        conf_linear_ch = config.conf_linear_channels
+        conf_linear_bits = config.conf_linear_bits
 
-        num_classes = config.model.num_classes
+        num_classes = config.num_classes
 
-        input_dim = 2 if config.graph.features else 0
+        input_dim = config.features
         
         self.conv1 = MyPointNetConv(input_dim+2, conv_ch[0], bias=False, input_bits=8, num_bits=8, first_layer=True)
         self.conv2 = MyPointNetConv(conv_ch[0]+2, conv_ch[1], bias=False, num_bits=conv_bits[1])
@@ -60,23 +60,12 @@ class GCN(Module):
 
     def forward(self, data):
         x, pos, edge_index, batch = data['x'], data['pos'], data['edge_index'], data['batch']
-
-        graph_gen_out(x, pos, edge_index, self.config, 'outputs/graph_out.txt')
-
         x = self.conv1(x, pos, edge_index)
-        conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv1_out.txt')
         x = self.conv2(x, pos, edge_index)
-        conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv2_out.txt')
         x = self.conv3(x, pos, edge_index)
-        conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv3_out.txt')
         x = self.conv4(x, pos, edge_index)
-        conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv4_out.txt')
 
         x = self.pooling(x, pos, batch, self.conv4.observer_output)
-        vector_out(x, self.config, 'outputs/pooling_out.txt')
-
-
-
         x = self.fc1(x)
 
         if not self.quantize_mode:
@@ -85,7 +74,6 @@ class GCN(Module):
             # In quantize mode, simulate quantized ReLU
             x[x < self.fc1.observer_output.zero_point] = self.fc1.observer_output.zero_point
 
-        vector_out(x, self.config, 'outputs/fc1.txt')
         x = self.fc2(x)
 
         if not self.quantize_mode:
@@ -94,27 +82,20 @@ class GCN(Module):
             # In quantize mode, simulate quantized ReLU
             x[x < self.fc2.observer_output.zero_point] = self.fc2.observer_output.zero_point
 
-        vector_out(x, self.config, 'outputs/fc2.txt')
         x = self.rnn(x)[0]
-        vector_out(x, self.config, 'outputs/rnn.txt')
 
         conf = self.conf(x)
-        vector_out(conf, self.config, 'outputs/conf.txt')
         conf = conf.squeeze(2)
 
         cls = self.cls(x)
-        vector_out(cls, self.config, 'outputs/cls.txt')
         cls = cls.permute(0, 2, 1)
-
         if self.quantize_mode.item():
             conf = self.conf.observer_output.dequantize_tensor(conf)
             cls = self.cls.observer_output.dequantize_tensor(cls)
-
         return conf, cls
     
     def calibrate(self):
         self.calib_mode.fill_(True)
-
         self.conv1.calibrate()
         self.conv2.calibrate()
         self.conv3.calibrate()

@@ -1,15 +1,17 @@
-import glob
+import glob, os
 import random
 import torch
+import datetime
 import numpy as np
 from torch.utils.data import DataLoader
-from omegaconf import OmegaConf
 from tqdm import tqdm
 from pathlib import Path
 
 from dataset.nas import SpikingDS
-from models.networks.recognition import Recognition
+from configs.build_config import build_config
 from utils.collate_fn import collate_fn
+
+from models.networks.recognition import Recognition
 
 # -------------------------------------------------
 # 0. Training config (CHANGE HERE)
@@ -86,12 +88,11 @@ print(
 # -------------------------------------------------
 # 3. Dataset
 # -------------------------------------------------
-cfg_dataset = OmegaConf.load("configs/dataset.yaml")
-cfg_model   = OmegaConf.load("configs/model.yaml")
+cfg = build_config()
 
-train_ds = SpikingDS(train_files, cfg_dataset)
-test_ds  = SpikingDS(test_files, cfg_dataset)
-val_ds   = SpikingDS(val_files, cfg_dataset)
+train_ds = SpikingDS(train_files, cfg)
+test_ds  = SpikingDS(test_files, cfg)
+val_ds   = SpikingDS(val_files, cfg)
 
 # -------------------------------------------------
 # 4. DataLoaders
@@ -132,7 +133,7 @@ val_dl = DataLoader(
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
-model = Recognition(cfg_model).to(device)
+model = Recognition(cfg.model).to(device)
 
 criterion = torch.nn.CrossEntropyLoss()
 
@@ -179,35 +180,14 @@ def move_to_device(batch):
         for k, v in batch.items()
     }
 
-# -------------------------------------------------
-# 9. Sanity check (DO THIS ONCE)
-# -------------------------------------------------
-batch = next(iter(train_dl))
-batch = move_to_device(batch)
 
-print("x:", batch["x"].shape)
-print("pos:", batch["pos"].shape)
-print("edge_index:", batch["edge_index"].shape)
-print("batch vec:", batch["batch"].shape)
-print("labels:", batch["y"].shape)
-
-with torch.no_grad():
-    out = model(batch)
-print("logits:", out.shape)
-
-# -------------------------------------------------
-# 10. Training loop
-# -------------------------------------------------
-for epoch in range(EPOCHS):
-    # -------------------------
-    # Train
-    # -------------------------
+def train_one_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
     total_loss = 0.0
     correct = 0
     total = 0
 
-    for batch in tqdm(train_dl, desc=f"Train {epoch:02d}"):
+    for batch in tqdm(dataloader, desc="Training"):
         batch = move_to_device(batch)
 
         optimizer.zero_grad()
@@ -221,43 +201,183 @@ for epoch in range(EPOCHS):
         correct += (preds == batch["y"]).sum().item()
         total += batch["y"].size(0)
 
-    train_loss = total_loss / total
-    train_acc  = correct / total
+    avg_loss = total_loss / total
+    accuracy = correct / total
+    return avg_loss, accuracy
 
-    # -------------------------
-    # Scheduler step
-    # -------------------------
-    if scheduler is not None:
-        scheduler.step()
 
-    # -------------------------
-    # Evaluate
-    # -------------------------
+def evaluate(model, dataloader, criterion, device):
     model.eval()
+    total_loss = 0.0
     correct = 0
     total = 0
 
     with torch.no_grad():
-        for batch in tqdm(val_dl, desc=f"Val   {epoch:02d}"):
+        for batch in tqdm(dataloader, desc="Evaluating"):
             batch = move_to_device(batch)
             logits = model(batch)
+            loss = criterion(logits, batch["y"])
+
+            total_loss += loss.item() * batch["y"].size(0)
             preds = logits.argmax(dim=1)
             correct += (preds == batch["y"]).sum().item()
             total += batch["y"].size(0)
 
-    val_acc = correct / total
-    current_lr = optimizer.param_groups[0]["lr"]
+    avg_loss = total_loss / total
+    accuracy = correct / total
+    return avg_loss, accuracy
 
+
+folder_path = f"results/recognition/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+os.makedirs(folder_path, exist_ok=True)
+best_val_acc = 0.0
+
+# -------------------------------------------------
+# 10. Training loop
+# -------------------------------------------------
+for epoch in range(1):
+    # -------------------------
+    # Train
+    # -------------------------
+    train_loss, train_acc = train_one_epoch(
+        model,
+        train_dl,
+        criterion,
+        optimizer,
+        device
+    )
     print(
-        f"Epoch {epoch:02d} | "
-        f"LR {current_lr:.2e} | "
-        f"Train loss: {train_loss:.4f} | "
-        f"Train acc: {train_acc:.3f} | "
-        f"Val acc: {val_acc:.3f}"
+        f"Epoch {epoch+1}/{EPOCHS} | "
+        f"Train Loss: {train_loss:.4f} | "
+        f"Train Acc: {train_acc*100:.2f}%"
     )
 
+    # -------------------------
+    # Validate
+    # -------------------------
+    val_loss, val_acc = evaluate(
+        model,
+        val_dl,
+        criterion,
+        device
+    )
+    print(
+        f"Epoch {epoch+1}/{EPOCHS} | "
+        f"Val Loss: {val_loss:.4f} | "
+        f"Val Acc: {val_acc*100:.2f}%"
+    )
+
+    if val_acc > best_val_acc:
+        best_val_acc = val_acc
+        torch.save(
+            model.state_dict(),
+            os.path.join(folder_path, "best_model.pth")
+        )
+        print(f"New best model saved with Val Acc: {best_val_acc*100:.2f}%")
+
+    # -------------------------
+    # Step scheduler
+    # -------------------------
+    if scheduler is not None:
+        scheduler.step()
+
+
 # -------------------------------------------------
-# 11. Save model
+# 11. Test best model
 # -------------------------------------------------
-torch.save(model.state_dict(), "recognition_baseline.pth")
-print("Model saved.")
+print("Testing best model on test set...")
+model.load_state_dict(
+    torch.load(os.path.join(folder_path, "best_model.pth"))
+)
+test_loss, test_acc = evaluate(
+    model,
+    test_dl,
+    criterion,
+    device
+)
+print(
+    f"Test Loss: {test_loss:.4f} | "
+    f"Test Acc: {test_acc*100:.2f}%"
+)
+
+
+model.calibrate()
+best_val_acc = 0.0
+
+for epoch in range(1):
+    # -------------------------
+    # Train
+    # -------------------------
+    train_loss, train_acc = train_one_epoch(
+        model,
+        train_dl,
+        criterion,
+        optimizer,
+        device
+    )
+    print(
+        f"Epoch {epoch+1}/{EPOCHS} | "
+        f"Train Loss: {train_loss:.4f} | "
+        f"Train Acc: {train_acc*100:.2f}%"
+    )
+
+    # -------------------------
+    # Validate
+    # -------------------------
+    val_loss, val_acc = evaluate(
+        model,
+        val_dl,
+        criterion,
+        device
+    )
+    print(
+        f"Epoch {epoch+1}/{EPOCHS} | "
+        f"Val Loss: {val_loss:.4f} | "
+        f"Val Acc: {val_acc*100:.2f}%"
+    )
+
+    if val_acc > best_val_acc:
+        best_val_acc = val_acc
+        torch.save(
+            model.state_dict(),
+            os.path.join(folder_path, "best_model_calibration.pth")
+        )
+        print(f"New best model saved with Val Acc: {best_val_acc*100:.2f}%")
+
+    # -------------------------
+    # Step scheduler
+    # -------------------------
+    if scheduler is not None:
+        scheduler.step()
+
+
+# -------------------------------------------------
+# 11. Test best calibrated model
+# -------------------------------------------------
+print("Testing best calibrated model on test set...")
+model.load_state_dict(
+    torch.load(os.path.join(folder_path, "best_model_calibration.pth"))
+)
+test_loss, test_acc = evaluate(
+    model,
+    test_dl,
+    criterion,
+    device
+)
+print(
+    f"Test Loss: {test_loss:.4f} | "
+    f"Test Acc: {test_acc*100:.2f}%"
+)
+
+model.quantize()
+
+test_loss, test_acc = evaluate(
+    model,
+    test_dl,
+    criterion,
+    device
+)
+print(
+    f"Test Loss: {test_loss:.4f} | "
+    f"Test Acc: {test_acc*100:.2f}%"
+)

@@ -1,0 +1,18 @@
+features: 2
+num_classes: 11
+
+conv_channels: [72, 72, 72, 72]
+conv_bits: [16, 8, 8, 8]
+
+stem_channels: 72
+stem_bits: 8
+
+rnn_channels: 72
+rnn_bits: 8
+
+cls_linear_channels: 72
+cls_linear_bits: 8
+
+conf_linear_channels: 72
+conf_linear_bits: 8
+global_pooling: max 

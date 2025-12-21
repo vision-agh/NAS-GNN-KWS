@@ -13,7 +13,7 @@ def generate_exponential_thresholds(num_channels, start=64, end=32):
 
 def build_config(dataset_cfg_path="configs/dataset.yaml",
                  nas_cfg_path="configs/nas.yaml",
-                 model_cfg_path="configs/model.yaml"):
+                 model_cfg_path="configs/recognition.yaml"):
     dataset_cfg = OmegaConf.load(dataset_cfg_path)
     nas_cfg = OmegaConf.load(nas_cfg_path)
     model_cfg = OmegaConf.load(model_cfg_path)

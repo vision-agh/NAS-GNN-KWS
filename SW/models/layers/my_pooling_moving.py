@@ -31,7 +31,7 @@ def global_mean_pool(x: Tensor,        # [N, F]
     """
 
     # 1) static parameters
-    T = int(1.0 / step)
+    T = int(pos[:, 0].max().item() / step)
     B = int(batch.max().item()) + 1
     F = x.size(1)
 
@@ -145,7 +145,7 @@ class MyMovingGlobalPooling(nn.Module):
         """
 
         # 1) static parameters
-        T = int(1.0 / step)
+        T = int(pos[:, 0].max().item() / step) + 1
         B = int(batch.max().item()) + 1
         F = x.size(1)
 

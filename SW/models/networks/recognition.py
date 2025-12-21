@@ -41,29 +41,21 @@ class Recognition(Module):
     def forward(self, data):
         outputs = []
         x, pos, edge_index, batch = data['x'], data['pos'], data['edge_index'], data['batch']
-        # graph_gen_out(x, pos, edge_index, self.config, 'outputs/graph_out.txt')
-
         x = self.conv1(x, pos, edge_index)
-        # conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv1_out.txt')
         x = self.conv2(x, pos, edge_index)
-        # conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv2_out.txt')
         x = self.conv3(x, pos, edge_index)
-        # conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv3_out.txt')
         x = self.conv4(x, pos, edge_index)
-        # conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv4_out.txt')
         x = self.pooling(x, batch, self.conv4.observer_output)
-        # np.savetxt('outputs/pooling.txt', x.detach().cpu().numpy().reshape(-1))
 
         x = self.fc1(x)
         if not self.quantize_mode:
             x = F.relu(x)
         else:
             x[x < self.fc1.observer_output.zero_point] = self.fc1.observer_output.zero_point
-
-        # np.savetxt('outputs/fc1.txt', x.detach().cpu().numpy().reshape(-1))
         x = self.fc2(x)
-        # np.savetxt('outputs/fc2.txt', x.detach().cpu().numpy().reshape(-1))
 
+        if self.quantize_mode.item():
+            x = self.fc2.observer_output.dequantize_tensor(x)
         return x
     
     def calibrate(self):
