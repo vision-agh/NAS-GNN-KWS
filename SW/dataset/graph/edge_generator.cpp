@@ -7,38 +7,41 @@
 class EdgeGenerator {
 public:
     int num_channels;
+    float time_window;
     float channel_radius;
     float low_time_radius;
     float high_time_radius;
-    float time_leaky;
-    float norm_channel_filter;
-    float threshold;
-    float time_window;
     int skip_channels;
     std::string features;
+    bool use_filtration;
+    int div_factor;
+    int weight;
+    std::vector<int> thresholds;
 
     EdgeGenerator(
                 int num_channels, 
+                float time_window, 
                 float channel_radius, 
                 float low_time_radius, 
                 float high_time_radius, 
-                float time_leaky,
-                float norm_channel_filter,
-                float threshold,
-                float time_window, 
                 int skip_channels, 
-                std::string features)
+                std::string features,
+                bool use_filtration,
+                int div_factor,
+                int weight,
+                std::vector<int> thresholds)
 
         :   num_channels(num_channels), 
+            time_window(time_window), 
             channel_radius(channel_radius),
             low_time_radius(low_time_radius), 
             high_time_radius(high_time_radius), 
-            time_leaky(time_leaky), 
-            threshold(threshold),
-            norm_channel_filter(norm_channel_filter), 
-            time_window(time_window), 
             skip_channels(skip_channels), 
-            features(features) {}
+            features(features),
+            use_filtration(use_filtration),
+            div_factor(div_factor),
+            weight(weight),
+            thresholds(thresholds) {}
 
     // ------------------------------------------------------------------
     // RETURN: edges, features, positions
@@ -79,18 +82,21 @@ public:
             // -----------------------------------------
             // FILTERING BASED ON TIME AND POTENTIAL
             // -----------------------------------------
+            
             float last_time = filter_potential[channel].first;
             float potential = filter_potential[channel].second;
 
             float delta_t = time - last_time;
-            int decay = floor(delta_t / (time_leaky * (1.0f + float(channel / norm_channel_filter))));
+            int decay = floor(delta_t / (1 << div_factor));
             potential = std::max(0.0f, potential - float(decay));
-            potential += 1.0f;
+            potential += float(weight);
 
             filter_potential[channel] = {time, potential};
-
-            if (potential < threshold) {
-                continue;
+            
+            if (use_filtration) {
+                if (potential < thresholds[channel]) {
+                    continue;
+                }
             }
 
             potential = 0.0f;
@@ -177,7 +183,18 @@ public:
 
 PYBIND11_MODULE(edge_generator, m) {
     pybind11::class_<EdgeGenerator>(m, "EdgeGenerator")
-        .def(pybind11::init<int, float, float, float, float, float, float, float, int, std::string>())
+        .def(pybind11::init<int, float, float, float, float, int, std::string, bool, int, int, std::vector<int>>(),
+             pybind11::arg("num_channels"),
+             pybind11::arg("time_window"),
+             pybind11::arg("channel_radius"),
+             pybind11::arg("low_time_radius"),
+             pybind11::arg("high_time_radius"),
+             pybind11::arg("skip_channels"),
+             pybind11::arg("features"),
+             pybind11::arg("use_filtration"),
+             pybind11::arg("div_factor"),
+             pybind11::arg("weight"),
+             pybind11::arg("thresholds"))
         .def("generate_edges", &EdgeGenerator::generate_edges,
              pybind11::arg("times"),
              pybind11::arg("channels"),

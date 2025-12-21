@@ -2,17 +2,18 @@ import yaml
 import glob
 import random
 import matplotlib.pyplot as plt
-from omegaconf import OmegaConf
 from dataset.nas import SpikingDS
 from pathlib import Path
-
+from configs.build_config import build_config
 
 vis_edges = False
 
 files = glob.glob(
     f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat/*/*"
 )
-cfg = OmegaConf.load("configs/dataset.yaml")
+cfg = build_config()
+print(cfg)
+
 ds = SpikingDS(files, cfg)
 
 for data in ds:

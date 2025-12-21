@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-def nas_loader(file, settings):
+def nas_loader(file, config):
     file = open(file, "rb")
     file_data = file.read()
 
@@ -14,10 +14,10 @@ def nas_loader(file, settings):
         index = 0
 
     # Raw data extraction
-    num_spikes = int(math.floor(len(file_data[index:]) / (settings.address_size + settings.timestamp_size)))
-    spikes_array = file_data[index:index + num_spikes * (settings.address_size + settings.timestamp_size)]
-    address_param = ">u" + str(settings.address_size)
-    timestamp_param = ">u" + str(settings.timestamp_size)
+    num_spikes = int(math.floor(len(file_data[index:]) / (config.address_size + config.timestamp_size)))
+    spikes_array = file_data[index:index + num_spikes * (config.address_size + config.timestamp_size)]
+    address_param = ">u" + str(config.address_size)
+    timestamp_param = ">u" + str(config.timestamp_size)
     bytes_struct = np.dtype(address_param + ", " + timestamp_param)
 
     spikes = np.frombuffer(spikes_array, bytes_struct)
@@ -25,7 +25,7 @@ def nas_loader(file, settings):
     timestamps = spikes['f1']
 
     # Normalize timestamps
-    timestamps = (timestamps - timestamps[0]) * settings.ts_tick
+    timestamps = (timestamps - timestamps[0]) * config.ts_tick
 
     # Remove noise events that occur around 0-1000 microseconds
     valid_indices = np.where(timestamps >= 1000)[0]

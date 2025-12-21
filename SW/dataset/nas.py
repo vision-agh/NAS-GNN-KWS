@@ -7,7 +7,6 @@ import numpy as np
 from torch.utils.data import Dataset
 from dataset.utils.detective_active_range import detect_active_range
 from dataset.utils.nas_loader import nas_loader
-from configs.nas_settings import settings
 
 
 WORDS_COMM = [
@@ -31,41 +30,24 @@ WORD_ALL_TO_CLASS = {w: i for i, w in enumerate(WORDS_ALL)}
 class SpikingDS(Dataset):
     def __init__(self,
                  files,
-                 config,
+                 cfg,
                  train: bool = False):
         
-        self.train = train
-        self.config = config
         self.files = files
-        self.version = config.version
+        self.cfg = cfg
+        self.train = train
 
-        self.polarity = config.polarity
-        self.stereo = config.stereo
-        self.cochlea = config.cochlea
-
-        self.num_channels = config.num_channels
-        self.channel_radius = config.channel_radius
-        self.low_time_radius = config.low_time_radius
-        self.high_time_radius = config.high_time_radius
-        self.time_leaky = config.time_leaky
-        self.norm_channel_filter = config.norm_channel_filter
-        self.threshold = config.threshold
-        self.time_window = config.time_window
-        self.skip_channels = config.skip_channels
-        self.features_aggregation = config.features_aggregation
-        
-        self.nas_settings = settings
-
-        self.edge_gen = edge_generator.EdgeGenerator(self.config.num_channels * (1 + self.polarity) * (1 + self.stereo), 
-                                                        self.config.channel_radius, 
-                                                        self.config.low_time_radius,
-                                                        self.config.high_time_radius,
-                                                        self.config.time_leaky, 
-                                                        self.config.norm_channel_filter,
-                                                        self.config.threshold,
-                                                        self.config.time_window,
-                                                        self.config.skip_channels,
-                                                        self.config.features_aggregation)
+        self.edge_gen = edge_generator.EdgeGenerator(self.cfg.dataset.num_channels * (1 + self.cfg.dataset.polarity) * (1 + self.cfg.dataset.stereo), 
+                                                        self.cfg.dataset.time_window,
+                                                        self.cfg.dataset.channel_radius, 
+                                                        self.cfg.dataset.low_time_radius,
+                                                        self.cfg.dataset.high_time_radius,
+                                                        self.cfg.dataset.skip_channels,
+                                                        self.cfg.dataset.features_aggregation,
+                                                        self.cfg.dataset.use_filtration,
+                                                        self.cfg.dataset.div_factor,
+                                                        self.cfg.dataset.weight,
+                                                        self.cfg.dataset.thresholds)
 
     def __len__(self) -> int:
         return len(self.files)
@@ -74,17 +56,17 @@ class SpikingDS(Dataset):
         data_file = self.files[index]
         y = self.filename_to_class(data_file)
 
-        addr, ts = nas_loader(data_file, self.nas_settings)
+        addr, ts = nas_loader(data_file, self.cfg.nas)
 
         pos = torch.from_numpy(np.column_stack((ts, addr))).float()
         pos[:, 0] = torch.round(pos[:, 0])
-        pos = pos[pos[:, 0] < 2 * self.time_window]
+        pos = pos[pos[:, 0] < 2 * self.cfg.dataset.time_window]
 
         # ---------------- COCHLEA FILTERING ----------------
-        if self.config.cochlea == 'left':
-            pos = pos[pos[:, 1] < self.num_channels * 2]
-        elif self.config.cochlea == 'right':
-            pos = pos[pos[:, 1] >= self.num_channels * 2]
+        if self.cfg.dataset.cochlea == 'left':
+            pos = pos[pos[:, 1] < self.cfg.dataset.num_channels * 2]
+        elif self.cfg.dataset.cochlea == 'right':
+            pos = pos[pos[:, 1] >= self.cfg.dataset.num_channels * 2]
         # 'both' keeps all
 
         if len(pos) == 0:
@@ -97,9 +79,10 @@ class SpikingDS(Dataset):
         # ---------------- EDGE GENERATION ------------------
         edge_index, x, pos = self.edge_gen.generate_edges(pos[:, 0], pos[:, 1], polarity_feat)
 
-        pos[:, 0] = pos[:, 0] / self.time_window
-        pos[:, 1] = pos[:, 1] / self.num_channels if not self.polarity else pos[:, 1] / (self.num_channels * 2)
-        
+        # ---------------- NORMALIZATION --------------------
+        pos[:, 0] = pos[:, 0] / self.cfg.dataset.time_window
+        pos[:, 1] = pos[:, 1] / self.cfg.dataset.num_channels if not self.cfg.dataset.polarity else pos[:, 1] / (self.cfg.dataset.num_channels * 2)
+
         if pos.shape[0] < 2:
             return self.__getitem__((index + 1) % len(self))
 
@@ -112,19 +95,19 @@ class SpikingDS(Dataset):
     
     def filename_to_class(self, fname):
         word = fname.split('/')[-2]
-        if self.version == 'commands':
+        if self.cfg.dataset.version == 'commands':
             if word not in WORD_COMM_TO_CLASS:
                 word = 'unknown'
 
-        if self.version == 'commands':
+        if self.cfg.dataset.version == 'commands':
             return WORD_COMM_TO_CLASS.get(word)
         else:
             return WORD_ALL_TO_CLASS.get(word)
 
     def decode_event(self, addr):
         # cochlea selection
-        coch = 0 if addr < (self.num_channels * 2) else 1
-        local = addr % (self.num_channels * 2)
+        coch = 0 if addr < (self.cfg.dataset.num_channels * 2) else 1
+        local = addr % (self.cfg.dataset.num_channels * 2)
 
         polarity = -1 if (local % 2 == 0) else 1
         channel = local // 2     # 0–63
@@ -139,8 +122,8 @@ class SpikingDS(Dataset):
         """
 
         # --- Decode raw event properties ---
-        coch = (addrs >= self.num_channels * 2).long()                 # 0 = left, 1 = right
-        local = addrs % (self.num_channels * 2)                          # 0–127 inside the cochlea
+        coch = (addrs >= self.cfg.dataset.num_channels * 2).long()                 # 0 = left, 1 = right
+        local = addrs % (self.cfg.dataset.num_channels * 2)                          # 0–127 inside the cochlea
         polarity = torch.where(local % 2 == 0, -1, 1)
         channel = local // 2                         # 0–63
 
@@ -148,11 +131,11 @@ class SpikingDS(Dataset):
         #   STEP 1: COCHLEA FILTERING AND NORMALIZATION
         # ================================================================
 
-        if self.cochlea == "left":
+        if self.cfg.dataset.cochlea == "left":
             # keep only left
             coch = torch.zeros_like(coch)
             # local already 0–127
-        elif self.cochlea == "right":
+        elif self.cfg.dataset.cochlea == "right":
             # keep only right
             coch = torch.zeros_like(coch)     # normalize right → 0
             # local still 0–127 because (addr % 128)
@@ -165,13 +148,13 @@ class SpikingDS(Dataset):
         # ================================================================
 
         # ---------- CASE A: polarity encoded into address (0–127) ----------
-        if self.polarity:
+        if self.cfg.dataset.polarity:
             # addr = channel*2 + (0=neg,1=pos)
             new_addr = channel * 2 + (polarity == 1).long()
 
             # If stereo and both cochleas → add offset 128 for right
-            if self.stereo and self.cochlea == "both":
-                new_addr = new_addr + coch * self.num_channels * 2
+            if self.cfg.dataset.stereo and self.cfg.dataset.cochlea == "both":
+                new_addr = new_addr + coch * self.cfg.dataset.num_channels * 2
 
             polarity_feat = None
 
@@ -180,8 +163,8 @@ class SpikingDS(Dataset):
             new_addr = channel                # 0–63
             polarity_feat = polarity.float()  # additional feature
 
-            if self.stereo and self.cochlea == "both":
-                new_addr = new_addr + coch * self.num_channels
+            if self.cfg.dataset.stereo and self.cfg.dataset.cochlea == "both":
+                new_addr = new_addr + coch * self.cfg.dataset.num_channels
 
         return new_addr, polarity_feat
 
