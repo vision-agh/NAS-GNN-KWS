@@ -1,3 +1,4 @@
+# NAS dataset specific configuration - for now do not change!
 num_channels: 64 
 mono_stereo: 1
 address_size: 2
