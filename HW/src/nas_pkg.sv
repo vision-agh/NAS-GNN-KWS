@@ -46,10 +46,17 @@ package nas_pkg;
     parameter GEN_MULTIPLIER_F = 1369605345;
     parameter GEN_ZERO_POINT = 32;
 
+<<<<<<< HEAD
     parameter THROUGHPUT = 20; // for FIFO read
     // LIF parameters
     parameter DECAY_SHIFT = 8;
     parameter WEIGHT = 32;
+=======
+    parameter THROUGHPUT = 400; // for FIFO read
+    // LIF parameters
+    parameter DECAY_SHIFT = 4;
+    parameter WEIGHT = 1;
+>>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
     const int thresholds [0:NUM_CHANNEL-1] = '{
             64, 64, 63, 63, 63, 62, 62, 62, 61, 61, 61, 60, 60, 60, 59, 59, 
             59, 58, 58, 58, 57, 57, 57, 56, 56, 56, 56, 55, 55, 55, 54, 54, 
