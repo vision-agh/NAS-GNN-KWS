@@ -1,8 +1,12 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # create_clock -period 5.000 -name clk -waveform {0.000 2.500} -add [get_ports -filter { NAME =~  "*clk*" && DIRECTION == "IN" }]
 =======
 
 >>>>>>> 68a19b5 (HW: sort source files, add NAS modules and GCNN-NAS integration logic, update xdc)
+=======
+# create_clock -period 5.000 -name clk -waveform {0.000 2.500} -add [get_ports -filter { NAME =~  "*clk*" && DIRECTION == "IN" }]
+>>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
 #*** External clock ***
 set_property IOSTANDARD LVDS [get_ports clock_125p]
 
@@ -56,6 +60,7 @@ set_property IOSTANDARD LVCMOS33 [get_ports i2s_lr]
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 
@@ -86,3 +91,5 @@ set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
 set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
 connect_debug_port dbg_hub/clk [get_nets clk_200]
 >>>>>>> 68a19b5 (HW: sort source files, add NAS modules and GCNN-NAS integration logic, update xdc)
+=======
+>>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
