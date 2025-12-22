@@ -27,7 +27,9 @@ package nas_pkg;
 
     parameter ZERO_POINT = '0;
     parameter MULTIPLIER = '0;
- 
+
+  
+
     typedef struct packed {
       logic [T_WIDTH -1: 0] t;
       logic [F_WIDTH -1: 0] f;
@@ -43,5 +45,20 @@ package nas_pkg;
     parameter GEN_MULTIPLIER_T = 958724;
     parameter GEN_MULTIPLIER_F = 1369605345;
     parameter GEN_ZERO_POINT = 32;
+
+    parameter THROUGHPUT = 400; // for FIFO read
+    // LIF parameters
+    parameter DECAY_SHIFT = 4;
+    parameter WEIGHT = 1;
+    const int thresholds [0:NUM_CHANNEL-1] = '{
+            64, 64, 63, 63, 63, 62, 62, 62, 61, 61, 61, 60, 60, 60, 59, 59, 
+            59, 58, 58, 58, 57, 57, 57, 56, 56, 56, 56, 55, 55, 55, 54, 54, 
+            54, 53, 53, 53, 53, 52, 52, 52, 51, 51, 51, 51, 50, 50, 50, 50, 
+            49, 49, 49, 48, 48, 48, 48, 47, 47, 47, 47, 46, 46, 46, 46, 45, 
+            45, 45, 45, 44, 44, 44, 44, 43, 43, 43, 43, 43, 42, 42, 42, 42, 
+            41, 41, 41, 41, 40, 40, 40, 40, 40, 39, 39, 39, 39, 39, 38, 38, 
+            38, 38, 37, 37, 37, 37, 37, 36, 36, 36, 36, 36, 35, 35, 35, 35, 
+            35, 35, 34, 34, 34, 34, 34, 33, 33, 33, 33, 33, 33, 32, 32, 32
+        };
 
 endpackage
