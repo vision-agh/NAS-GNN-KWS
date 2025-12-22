@@ -2,14 +2,14 @@
 
 import nas_pkg::*;
 
-module top #(
+module gcnn_top #(
 )( 
     input logic                clk,
     input logic                reset,
     input logic [T_WIDTH-1: 0] t, 
     input logic [F_WIDTH-1: 0] f, 
     input logic                is_valid,
-    input logic                is_last,
+    // input logic                is_last,
 
     output logic                      out_valid,
     output logic [PRECISION_GEN-1 :0] out_conf,
@@ -211,4 +211,4 @@ module top #(
       end
     endgenerate
 
-endmodule : top
+endmodule : gcnn_top
