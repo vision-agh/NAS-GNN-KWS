@@ -38,16 +38,16 @@ class SpikingDS(Dataset):
         self.train = train
 
         self.edge_gen = edge_generator.EdgeGenerator(self.cfg.dataset.num_channels * (1 + self.cfg.dataset.polarity) * (1 + self.cfg.dataset.stereo), 
-                                                        self.cfg.dataset.time_window,
-                                                        self.cfg.dataset.channel_radius, 
-                                                        self.cfg.dataset.low_time_radius,
-                                                        self.cfg.dataset.high_time_radius,
-                                                        self.cfg.dataset.skip_channels,
-                                                        self.cfg.dataset.features_aggregation,
-                                                        self.cfg.dataset.use_filtration,
-                                                        self.cfg.dataset.div_factor,
-                                                        self.cfg.dataset.weight,
-                                                        self.cfg.dataset.thresholds)
+                                                    self.cfg.dataset.time_window,
+                                                    self.cfg.dataset.channel_radius, 
+                                                    self.cfg.dataset.low_time_radius,
+                                                    self.cfg.dataset.high_time_radius,
+                                                    self.cfg.dataset.skip_channels,
+                                                    self.cfg.dataset.features_aggregation,
+                                                    self.cfg.dataset.use_filtration,
+                                                    self.cfg.dataset.div_factor,
+                                                    self.cfg.dataset.weight,
+                                                    self.cfg.dataset.thresholds)
 
     def __len__(self) -> int:
         return len(self.files)
@@ -103,7 +103,9 @@ class SpikingDS(Dataset):
                 'start_time': start_time,
                 'end_time': end_time,
                 'hist_smoothed': hist_smoothed,
-                'file': data_file}
+                'file': data_file,
+                'addr': addr,
+                'ts': ts}
 
     
     def filename_to_class(self, fname):

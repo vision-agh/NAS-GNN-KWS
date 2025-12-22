@@ -8,9 +8,9 @@ cochlea: left                   # {'left', 'right', 'both'}
 # graph construction settings
 channel_radius: 20              # Channel distance radius in graph construction
 low_time_radius: 2_000          # Inner time radius in microseconds         (0 - no inner radius)
-high_time_radius: 4_000         # Outer time radius in microseconds
+high_time_radius: 10_000         # Outer time radius in microseconds
 time_window: 1_000_000          # Time window in microseconds for event selection
-skip_channels: 1                # Number of channels to skip from each side       (1 - no skipping)
+skip_channels: 2                # Number of channels to skip from each side       (1 - no skipping)
 features_aggregation: global    # local, global or None
 
 # filtration settings

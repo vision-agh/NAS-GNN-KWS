@@ -45,7 +45,6 @@ torch.cuda.manual_seed_all(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
-
 # -------------------------------------------------
 # 2. Files & split
 # -------------------------------------------------
@@ -294,7 +293,6 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
         # Defensive casting: BCE targets must be float
         conf_target = batch["conf_vec"].to(dtype=conf_logits.dtype)
 
-        # IMPORTANT FIX:
         # pos_weight must be floating tensor on the correct device/dtype
         T = conf_target.shape[1]
         pos_weight = torch.full(
@@ -454,8 +452,6 @@ print(
 
 # -------------------------------------------------
 # 12. Calibration phase
-#   IMPORTANT FIX:
-#   best_val_loss must start at +inf (was 0.0, which prevents saving)
 # -------------------------------------------------
 model.calibrate()
 best_val_loss = float("inf")
