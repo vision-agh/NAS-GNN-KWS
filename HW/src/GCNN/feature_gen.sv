@@ -4,7 +4,7 @@ import nas_pkg::*;
 
 module feature_gen #(
     parameter T_MULTIPLIER = GEN_MULTIPLIER_T,    
-    parameter F_MULTIPLIER = GEN_MULTIPLIER_F,  
+    parameter [63:0] F_MULTIPLIER = GEN_MULTIPLIER_F,  
     parameter ZERO_POINT   = GEN_ZERO_POINT    
                             
 )(

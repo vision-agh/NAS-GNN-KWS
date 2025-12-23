@@ -29,9 +29,7 @@ package nas_pkg;
     parameter ZERO_POINT = '0;
     parameter MULTIPLIER = '0;
 
-  
-
-    typedef struct packed {
+      typedef struct packed {
       logic [T_WIDTH -1: 0] t;
       logic [F_WIDTH -1: 0] f;
       logic                 valid;
@@ -43,9 +41,9 @@ package nas_pkg;
     } edge_type;
 
     parameter DELTA_T_WIDTH = 15; //max value of 20000
-    parameter GEN_MULTIPLIER_T = 958724;
-    parameter GEN_MULTIPLIER_F = 1369605345;
-    parameter GEN_ZERO_POINT = 32;
+    parameter GEN_MULTIPLIER_T = 941192;
+    parameter [63:0] GEN_MULTIPLIER_F = 64'd7353064819; // (add 2^32)
+    parameter GEN_ZERO_POINT = 34;
 
     parameter THROUGHPUT = 20; // for FIFO read
     // LIF parameters
