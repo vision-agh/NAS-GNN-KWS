@@ -9,7 +9,7 @@ from models.layers.my_pointnet import MyPointNetConv
 from models.layers.my_pooling_moving import MyMovingGlobalPooling
 from models.layers.my_gru import MyGRU
 
-from utils.generate_outputs import conv_gen_out, conv_first_gen_out, graph_gen_out, vector_out
+# from utils.generate_outputs import conv_gen_out, conv_first_gen_out, graph_gen_out, vector_out
 
 class KWS(Module):
     def __init__(self, 

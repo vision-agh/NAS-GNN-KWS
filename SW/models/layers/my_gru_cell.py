@@ -441,7 +441,7 @@ class MyGRUCell(nn.Module):
         """
         Writes FPGA/RTL-friendly dumps. Kept compatible with your current outputs.
         """
-        weights_dir = Path("weights")
+        weights_dir = Path(file_name)
         weights_dir.mkdir(parents=True, exist_ok=True)
 
         # ---- Text summary ----

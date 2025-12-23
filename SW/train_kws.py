@@ -346,6 +346,11 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
 
         total += B
 
+        # for quick testing
+        
+        # if total > 500:
+        #     break
+
     # Avoid divide-by-zero in edge cases
     if total == 0:
         raise RuntimeError("Dataloader produced zero samples.")

@@ -76,9 +76,12 @@ class SpikingDS(Dataset):
         remapped_addr, polarity_feat = self.remap_addresses(pos[:, 1].long())
         pos[:, 1] = remapped_addr
 
+        pos_original = pos.clone()  # for debugging outputs, before graph generation
 
         # ---------------- EDGE GENERATION ------------------
         edge_index, x, pos = self.edge_gen.generate_edges(pos[:, 0], pos[:, 1], polarity_feat)
+
+        pos_filtered = pos.clone()  # for debugging outputs, after graph generation
 
         # ---------------- NORMALIZATION --------------------
         pos[:, 0] = pos[:, 0] / self.cfg.dataset.time_window
@@ -104,8 +107,8 @@ class SpikingDS(Dataset):
                 'end_time': end_time,
                 'hist_smoothed': hist_smoothed,
                 'file': data_file,
-                'addr': addr,
-                'ts': ts}
+                'pos_original': pos_original,
+                'pos_filtered': pos_filtered}
 
     
     def filename_to_class(self, fname):

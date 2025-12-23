@@ -2,7 +2,7 @@ features: 2
 num_classes: 11
 
 conv_channels: [72, 72, 72, 72]
-conv_bits: [16, 8, 8, 8]
+conv_bits: [8, 8, 8, 8]
 
 stem_channels: 72
 stem_bits: 8
