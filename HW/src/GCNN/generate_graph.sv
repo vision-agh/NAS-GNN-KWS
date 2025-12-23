@@ -9,7 +9,6 @@ module generate_graph #(
     input  logic      [T_WIDTH-1: 0]      t,
     input  logic      [F_WIDTH-1: 0]      f,
     input  logic                          is_valid,
-    // input  logic                          is_last,
 
     output event_type                     out_event,
     output edge_type  [MAX_EDGES-1 : 0]   out_edges,
@@ -19,6 +18,17 @@ module generate_graph #(
 
     event_type event_to_edges_gen,event_to_feature_gen;
     edge_type [MAX_EDGES-1 : 0] edges_to_feature_gen;
+
+    always @(posedge clk) begin
+        if (is_valid) begin
+            event_to_edges_gen.t <= t;
+            event_to_edges_gen.f <= f;
+            event_to_edges_gen.valid <= is_valid;
+        end
+        else begin
+            event_to_edges_gen.valid <= is_valid;
+        end
+    end
 
     edges_gen #() u_edges_gen (
         .clk           ( clk                  ),

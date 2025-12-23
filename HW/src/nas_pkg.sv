@@ -2,8 +2,9 @@ package nas_pkg;
 
 
     parameter F_RADIUS   = 10; //Search radius will be F_RADIUS*SKIPSTEPS                    
-    parameter T_RADIUS   = 20000;         
-    parameter SKIP_STEP = 1;        
+    parameter T_RADIUS_LOW   = 2000;
+    parameter T_RADIUS_HIGH = 10000;           
+    parameter SKIP_STEP = 2;        
     parameter MAX_EDGES  = (F_RADIUS*2) + 1; //the same F neighbour possible!;         
     parameter PRECISION_GEN  = 8;                    
     parameter PRECISION_CONV1  = 8;                    
