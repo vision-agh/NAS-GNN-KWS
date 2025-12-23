@@ -16,8 +16,11 @@ class MyPointNetConv(nn.Module):
         num_bits: int = 8,
         first_layer: bool = False,
         input_bits: int = 8,  # kept for API compatibility (unused)
+        cfg = None,
     ):
         super(MyPointNetConv, self).__init__()
+
+        self.cfg = cfg
 
         self.input_dim = int(input_dim)
         self.output_dim = int(output_dim)
@@ -282,6 +285,18 @@ class MyPointNetConv(nn.Module):
             f.write(f"Output scale ({int(self.num_bits_obs)} bit):\n {int(self.qscale_out)}\n")
             f.write(f"Output zero point:\n {int(self.observer_output.zero_point)}\n")
             f.write(f"M Scales ({int(self.num_bits_obs)} bit):\n {int(self.qscale_m)}\n")
+
+            f.write("Input quantisation (only for first layer):\n")
+            scale = int(self.qscale_in) / (2 ** self.num_bits_obs - 1)
+            scale_f = scale * self.cfg.dataset.num_channels * (1 + self.cfg.dataset.polarity) * (1 + self.cfg.dataset.stereo)
+            scale_f = 1 / scale_f
+            scale_f_int = int(round((2 ** self.num_bits_obs-1) * scale_f))
+
+            scale_t = scale * self.cfg.dataset.time_window
+            scale_t_f = 1 / scale_t
+            scale_t_int = int(round((2 ** self.num_bits_obs-1) * scale_t_f))
+            f.write(f"F scale (for 32 bits):{int(scale_f_int)}\n")
+            f.write(f"T scale (for 32 bits):{int(scale_t_int)}\n")
 
             # weights/bias (qlinear)
             bias = torch.flip(self.qlinear.bias, [0]).detach().cpu().numpy().astype(np.int32).tolist()

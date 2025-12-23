@@ -12,6 +12,9 @@ Output zero point:
  123
 M Scales (32 bit):
  41395752
+Input quantisation (only for first layer):
+F scale (for 32 bits):7353064819
+T scale (for 32 bits):941192
 Weight (8 bit):
 weights_conv[0] = {-24, -4, -9, 49};
 weights_conv[1] = {-21, 13, -35, -37};
