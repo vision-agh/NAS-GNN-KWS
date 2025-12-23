@@ -20,7 +20,7 @@ from models.networks.kws import KWS
 # -------------------------------------------------
 OPTIMIZER_TYPE = "adam"  # "adam" or "sgd"
 LR = 1e-3
-LR_CALIBRATION = 1e-6
+LR_CALIBRATION = 1e-4
 WEIGHT_DECAY = 1e-4
 
 USE_COSINE_SCHEDULER = True
@@ -345,9 +345,6 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
         total_dt_signed_ms += mean_signed_dt_ms.item() * B
 
         total += B
-
-        if total > 50:
-            break
 
     # Avoid divide-by-zero in edge cases
     if total == 0:
