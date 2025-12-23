@@ -16,20 +16,20 @@ class Recognition(Module):
         
         self.config = config
 
-        conv_ch = config.conv_channels
-        conv_bits = config.conv_bits
+        conv_ch = config.model.conv_channels
+        conv_bits = config.model.conv_bits
 
-        linear_ch = config.linear_channels
-        num_classes = config.num_classes
+        linear_ch = config.model.linear_channels
+        num_classes = config.model.num_classes
 
-        input_dim = config.features
+        input_dim = config.model.features
         
         self.conv1 = MyPointNetConv(input_dim+2, conv_ch[0], bias=False, num_bits=conv_bits[0], first_layer=True)
         self.conv2 = MyPointNetConv(conv_ch[0]+2, conv_ch[1], bias=False, num_bits=conv_bits[1])
         self.conv3 = MyPointNetConv(conv_ch[1]+2, conv_ch[2], bias=False, num_bits=conv_bits[2])
         self.conv4 = MyPointNetConv(conv_ch[2]+2, conv_ch[3], bias=False, num_bits=conv_bits[3])
         
-        self.pooling = MyGlobalPooling(config.global_pooling, num_bits=conv_bits[3])
+        self.pooling = MyGlobalPooling(config.model.global_pooling, num_bits=conv_bits[3])
 
         self.fc1 = MyLinear(conv_ch[3], linear_ch, bias= True, num_bits=conv_bits[3])
         self.fc2 = MyLinear(linear_ch, num_classes, bias=True, num_bits=conv_bits[3])

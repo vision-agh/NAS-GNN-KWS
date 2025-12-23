@@ -133,7 +133,7 @@ val_dl = DataLoader(
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
-model = Recognition(cfg.model).to(device)
+model = Recognition(cfg).to(device)
 
 criterion = torch.nn.CrossEntropyLoss()
 
