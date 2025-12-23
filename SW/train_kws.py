@@ -183,9 +183,7 @@ print(f"Using optimizer: {OPTIMIZER_TYPE}")
 
 # -------------------------------------------------
 # 7. Schedulers (Cosine)
-#   IMPORTANT FIX:
 #   - main scheduler steps main optimizer only
-#   - calibration scheduler steps calibration optimizer only
 # -------------------------------------------------
 scheduler = None
 scheduler_calibration = None
@@ -196,12 +194,7 @@ if USE_COSINE_SCHEDULER:
         T_max=EPOCHS,
         eta_min=1e-6,
     )
-    # scheduler_calibration = torch.optim.lr_scheduler.CosineAnnealingLR(
-    #     optimizer_calibration,
-    #     T_max=EPOCHS_CALIBRATION,
-    #     eta_min=1e-6,
-    # )
-    print("Using CosineAnnealingLR (main + calibration)")
+    print("Using CosineAnnealingLR (main)")
 
 
 # -------------------------------------------------
@@ -353,7 +346,7 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
 
         total += B
 
-        if training and total > 1000:
+        if total > 50:
             break
 
     # Avoid divide-by-zero in edge cases
