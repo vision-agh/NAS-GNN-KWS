@@ -32,8 +32,6 @@ for data in ds:
     print("File:", file)
     print("Start Time:", start_time)
     print("End Time:", end_time)
-    print("cls_vec:", data['cls_vec'])
-    print("end_vec:", data['end_vec'])
     fig, ax = plt.subplots(figsize=(10, 6))
 
     plt.scatter(pos[:, 0].numpy(), pos[:, 1].numpy(), s=3)
@@ -46,7 +44,7 @@ for data in ds:
             if src == dst:
                 continue
 
-            ax.plot([t1, t2], [c1, c2], linewidth=0.4, alpha=0.4, color='red')
+            ax.plot([t1, t2], [c1, c2], linewidth=0.4, alpha=0.2, color='red')
     plt.show(block=False)
     
     # Plot the smoothed histogram with active range

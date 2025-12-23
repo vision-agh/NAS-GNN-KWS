@@ -120,8 +120,8 @@ class SpikingDS(Dataset):
             return WORD_ALL_TO_CLASS.get(word)
         
     def generate_kws_vectors(self, pos, end_time, cls):
-        T = int(pos[:, 0].max() / self.cfg.dataset.bin_width) + 1
-        cls_vec = torch.ones(T, dtype=torch.float32) * (36 if self.cfg.dataset.version == 'all' else 10)  # unknown class
+        T = int(round(pos[:, 0].max().item() / self.cfg.dataset.bin_width)) + 1
+        cls_vec = torch.ones(T, dtype=torch.float32) * (35 if self.cfg.dataset.version == 'all' else 10)  # unknown class
         conf_vec = torch.zeros(T, dtype=torch.float32)
 
         if end_time is not None:

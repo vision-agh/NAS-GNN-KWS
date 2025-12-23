@@ -146,8 +146,7 @@ val_dl = DataLoader(
 # -------------------------------------------------
 # 5. Model
 # -------------------------------------------------
-model = KWS(cfg.model).to(device)
-
+model = KWS(cfg).to(device)
 
 # -------------------------------------------------
 # 6. Optimizers
@@ -286,11 +285,11 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
         desc = "Training" if training else "Eval"
 
     for batch in tqdm(dataloader, desc=desc):
+        
         batch = move_to_device(batch, dev)
-
         conf_logits, cls_logits = model(batch)
 
-        # Defensive casting: BCE targets must be float
+        # BCE targets must be float
         conf_target = batch["conf_vec"].to(dtype=conf_logits.dtype)
 
         # pos_weight must be floating tensor on the correct device/dtype
@@ -331,7 +330,7 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
             conf_logits, batch["conf_vec"]
         )
 
-        # cfg.dataset.bin_width assumed to be milliseconds per bin (or compatible scalar)
+        # cfg.dataset.bin_width assumed to be milliseconds per bin
         bin_width = float(cfg.dataset.bin_width)
         mean_abs_dt_ms = mean_abs_dt_steps * bin_width
         mean_signed_dt_ms = mean_signed_dt_steps * bin_width
@@ -341,8 +340,6 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
             loss.backward()
             optimizer.step()
 
-        # IMPORTANT FIX:
-        # Do not assume batch["y"] exists; use B from logits
         total_loss += loss.item() * B
         total_loss_conf += loss_conf.item() * B
         total_loss_cls += loss_cls.item() * B
@@ -355,6 +352,9 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
         total_dt_signed_ms += mean_signed_dt_ms.item() * B
 
         total += B
+
+        if training and total > 1000:
+            break
 
     # Avoid divide-by-zero in edge cases
     if total == 0:
@@ -379,7 +379,6 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
 folder_path = f"results/kws/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
 os.makedirs(folder_path, exist_ok=True)
 best_val_loss = float("inf")
-
 
 # -------------------------------------------------
 # 10. Training loop
