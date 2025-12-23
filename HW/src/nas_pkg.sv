@@ -47,6 +47,7 @@ package nas_pkg;
     parameter GEN_ZERO_POINT = 32;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     parameter THROUGHPUT = 20; // for FIFO read
     // LIF parameters
     parameter DECAY_SHIFT = 8;
@@ -57,6 +58,12 @@ package nas_pkg;
     parameter DECAY_SHIFT = 4;
     parameter WEIGHT = 1;
 >>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
+=======
+    parameter THROUGHPUT = 20; // for FIFO read
+    // LIF parameters
+    parameter DECAY_SHIFT = 8;
+    parameter WEIGHT = 32;
+>>>>>>> 7831012 (HW: modify KWS architecture for testing)
     const int thresholds [0:NUM_CHANNEL-1] = '{
             64, 64, 63, 63, 63, 62, 62, 62, 61, 61, 61, 60, 60, 60, 59, 59, 
             59, 58, 58, 58, 57, 57, 57, 56, 56, 56, 56, 55, 55, 55, 54, 54, 
