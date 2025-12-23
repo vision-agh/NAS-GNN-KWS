@@ -68,8 +68,7 @@ module NAS_KWS_TOP (
         // Output to KWS
         .out_t     (link_t),
         .out_f     (link_f),
-        .out_valid (link_valid),
-        .KWS_busy  (link_busy)
+        .out_valid (link_valid)
     );
 
     // 48 MHZ domain to 200 MHZ CDC handled internaly
@@ -89,7 +88,6 @@ module NAS_KWS_TOP (
         .in_t      (link_t),
         .in_f      (link_f),
         .in_valid  (link_valid),
-        .out_busy  (link_busy),
         
         .cnn_valid (out_valid),
         .cnn_conf  (out_conf),

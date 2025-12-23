@@ -11,16 +11,14 @@ entity timestamp_gen is
         clk       : in std_logic;
         rst       : in std_logic;
         
-        -- AER Interface (Input)
         AER_DATA  : in STD_LOGIC_VECTOR(6 downto 0);
         AER_REQ   : in STD_LOGIC;
         AER_ACK   : out STD_LOGIC;
         
-        -- Event Interface (Output to KWS)
         out_t     : out STD_LOGIC_VECTOR(T_WIDTH-1 downto 0);
         out_f     : out STD_LOGIC_VECTOR(F_WIDTH-1 downto 0);
-        out_valid : out STD_LOGIC;
-        KWS_busy : in STD_LOGIC -- from KWS
+        out_valid : out STD_LOGIC
+
     );
 end timestamp_gen;
 
@@ -30,9 +28,13 @@ architecture Behavioral of timestamp_gen is
     signal timer_active   : std_logic := '0';
     signal t_counter      : unsigned(T_WIDTH-1 downto 0) := (others => '0');
     signal ts_div_count   : unsigned(5 downto 0)         := (others => '0');
+
+    signal req_sync_reg   : std_logic_vector(1 downto 0) := "00";
+    signal req_synced     : std_logic;
+    signal req_prev       : std_logic := '0';
+    signal req_rising     : std_logic;
     
-    signal aer_ack_int    : std_logic := '0';
-    signal aer_state      : std_logic_vector(1 downto 0) := "00";
+    signal ack_reg        : std_logic := '0';
 
 begin
 
@@ -44,9 +46,10 @@ begin
             t_counter    <= (others => '0');
             timer_active <= '0';   
         elsif rising_edge(clk) then
-            if timer_active = '0' and AER_REQ = '1' then
+            if timer_active = '0' and req_synced = '1' then
                 timer_active <= '1';
             end if;
+            
             if timer_active = '1' then
                 if ts_div_count = TS_DIV - 1 then
                     ts_div_count <= (others => '0');
@@ -57,44 +60,34 @@ begin
             end if;
         end if;
     end process;
+    
+    req_synced <= req_sync_reg(1);
+    req_rising <= '1' when (req_synced = '1' and req_prev = '0') else '0';
 
-
-    aer_handshake: process(clk, rst)
+    aer_proc: process(clk, rst)
     begin
         if rst = '1' then
-            aer_state   <= "00";
-            aer_ack_int <= '0';
-            out_valid   <= '0';
-            out_t       <= (others => '0');
-            out_f       <= (others => '0');
+            req_sync_reg <= "00";
+            req_prev     <= '0';
+            ack_reg      <= '0';
+            out_valid    <= '0';
+            out_t        <= (others => '0');
+            out_f        <= (others => '0');
         elsif rising_edge(clk) then
+            req_sync_reg <= req_sync_reg(0) & AER_REQ;
+            req_prev     <= req_synced;
             out_valid <= '0';
             
-            case aer_state is
-                when "00" => 
-                    if KWS_busy = '0' then 
-                        aer_ack_int <= '1'; 
-                        aer_state   <= "01";
-                    end if;
-                when "01" => 
-                    if AER_REQ = '1' then
-                        out_t       <= std_logic_vector(t_counter);
-                        out_f       <= AER_DATA;
-                        out_valid   <= '1';
-                        
-                        aer_ack_int <= '0'; 
-                        aer_state   <= "10";
-                    end if;
-                when "10" => 
-                    if AER_REQ = '0' then
-                        aer_state <= "00";
-                    end if;
-                when others =>
-                    aer_state <= "00";
-            end case;
+            if req_rising = '1' then
+                out_t     <= std_logic_vector(t_counter);
+                out_f     <= AER_DATA; 
+                out_valid <= '1';
+            end if;
+            ack_reg <= req_synced;
+
         end if;
     end process;
 
-    AER_ACK <= aer_ack_int;
+    AER_ACK <= ack_reg;
 
 end Behavioral;
