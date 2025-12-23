@@ -94,7 +94,7 @@ module convolution_reversed #(
     assign web  = (counter_reg == F_RADIUS) && state_reg==CONV;// && outdim_counter_reg==0;
 
     assign addra = in_event_reg.f + counter_reg*SKIP_STEP;
-    assign addrb = in_event_reg.f - 100 + (counter_reg*SKIP_STEP);
+    assign addrb = in_event_reg.f - (F_RADIUS*SKIP_STEP) + (counter_reg*SKIP_STEP);
 
     assign condition_a = in_edges_reg[counter_reg].is_connected;
     assign condition_b = (counter_reg < F_RADIUS) ? in_edges_reg[F_RADIUS+1+counter_reg].is_connected : 1'b0;

@@ -61,7 +61,7 @@ module edges_gen #(
     assign web  = (counter == F_RADIUS) && state==GGEN;
 
     assign addra = in_event.f + counter*SKIP_STEP;
-    assign addrb = in_event.f - (F_RADIUS*2) + (counter*SKIP_STEP);
+    assign addrb = in_event.f - (F_RADIUS*SKIP_STEP) + (counter*SKIP_STEP);
 
     assign condition_a = (addra >= 0) && (addra < NUM_CHANNEL);
     assign condition_b = (addrb >= 0) && (addrb < NUM_CHANNEL);

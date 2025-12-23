@@ -38,7 +38,7 @@ module generate_graph #(
         .out_edges     ( edges_to_feature_gen )
         
     );
-    
+
     feature_gen #(
         .T_MULTIPLIER ( GEN_MULTIPLIER_T ),
         .F_MULTIPLIER ( GEN_MULTIPLIER_F ),
