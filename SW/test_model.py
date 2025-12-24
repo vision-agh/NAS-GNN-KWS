@@ -21,6 +21,7 @@ def move_to_device(batch, dev):
 # Prepare dataset
 files = glob.glob(
     f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat/*/*"
+    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat/stop/*"    # or select class e.g. stop here
 )
 
 # shuffle files for testing

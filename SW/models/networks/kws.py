@@ -68,13 +68,25 @@ class KWS(Module):
 
     def forward(self, data):
         x, pos, edge_index, batch = data['x'], data['pos'], data['edge_index'], data['batch']
-        x = self.conv1(x, pos, edge_index)
+
+        ###############################################################
+        # POSITIONAL NORMALISATION, REMOVE IF YOU TEST PREVIOUS MODELS!
+        pos_norm = pos.clone()
+        # pos_norm[:,0] = pos_norm[:,0] * (- 1 / (self.config.dataset.high_time_radius / 1000000))
+        # channels = self.config.dataset.num_channels if not self.config.dataset.polarity else (self.config.dataset.num_channels * 2)
+
+        # pos_norm[:,1] = pos_norm[:,1] + self.config.dataset.channel_radius / channels
+        # pos_norm[:,1] = pos_norm[:,1] * (channels / (self.config.dataset.channel_radius)) 
+        ###############################################################
+
+
+        x = self.conv1(x, pos_norm, edge_index)
         x = self.relu(x, self.conv1.observer_output)
-        x = self.conv2(x, pos, edge_index)
+        x = self.conv2(x, pos_norm, edge_index)
         x = self.relu(x, self.conv2.observer_output)
-        x = self.conv3(x, pos, edge_index)
+        x = self.conv3(x, pos_norm, edge_index)
         x = self.relu(x, self.conv3.observer_output)
-        x = self.conv4(x, pos, edge_index)
+        x = self.conv4(x, pos_norm, edge_index)
         x = self.relu(x, self.conv4.observer_output)
 
         x = self.pooling(x, pos, batch, self.conv4.observer_output)
