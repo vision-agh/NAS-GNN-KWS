@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-# create_clock -period 5.000 -name clk -waveform {0.000 2.500} -add [get_ports -filter { NAME =~  "*clk*" && DIRECTION == "IN" }]
-=======
->>>>>>> fb0443f (HW: fixing repository structure)
-=======
->>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
 #*** External clock ***
 set_property IOSTANDARD LVDS [get_ports clock_125p]
 
@@ -56,10 +49,3 @@ set_property IOSTANDARD LVCMOS33 [get_ports i2s_lr]
 #set_property PACKAGE_PIN J9 [get_ports AER_ACK]
 #set_property IOSTANDARD LVCMOS33 [get_ports AER_ACK]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
->>>>>>> fb0443f (HW: fixing repository structure)
-=======
->>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71

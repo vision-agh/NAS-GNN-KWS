@@ -68,20 +68,7 @@ module NAS_KWS_TOP (
         // Output to KWS
         .out_t     (link_t),
         .out_f     (link_f),
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
         .out_valid (link_valid)
-=======
-        .out_valid (link_valid),
-        .KWS_busy  (link_busy)
->>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
-=======
-        .out_valid (link_valid)
->>>>>>> 7831012 (HW: modify KWS architecture for testing)
-=======
-        .out_valid (link_valid)
->>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
     );
 
     // 48 MHZ domain to 200 MHZ CDC handled internaly
@@ -101,16 +88,6 @@ module NAS_KWS_TOP (
         .in_t      (link_t),
         .in_f      (link_f),
         .in_valid  (link_valid),
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-        .out_busy  (link_busy),
->>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
-=======
->>>>>>> 7831012 (HW: modify KWS architecture for testing)
-=======
->>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
         
         .cnn_valid (out_valid),
         .cnn_conf  (out_conf),
