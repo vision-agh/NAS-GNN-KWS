@@ -3,12 +3,15 @@ import nas_pkg::*;
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 import nas_pkg::*; 
 
 >>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
 =======
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
 module lif #(
     parameter int T_WIDTH     = 32,
     parameter int F_WIDTH     = 7,
@@ -18,6 +21,9 @@ module lif #(
 )(
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
     input  logic                clk,
     input  logic                rst,
     
@@ -138,6 +144,7 @@ module lif #(
         .doutb    ()
     );
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 
     logic [T_WIDTH-1:0] r_last_time;
@@ -311,3 +318,6 @@ endmodule//h
 =======
 endmodule
 >>>>>>> 5062840 (HW: updated lif)
+=======
+endmodule
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71

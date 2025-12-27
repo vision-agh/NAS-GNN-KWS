@@ -10,6 +10,7 @@ entity KWS is
         NUM_CHANNEL : integer := 128;
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         WEIGHT      : integer := 32;
         DECAY_SHIFT : integer := 8;
 =======
@@ -20,6 +21,10 @@ entity KWS is
         WEIGHT      : integer := 32;
         DECAY_SHIFT : integer := 8;
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+        WEIGHT      : integer := 32;
+        DECAY_SHIFT : integer := 8;
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
         PRECISION_GEN  : integer := 8 
     );
     Port (
@@ -29,6 +34,9 @@ entity KWS is
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
         -- Input Interface
         in_t         : in STD_LOGIC_VECTOR(T_WIDTH-1  downto 0);
         in_f         : in STD_LOGIC_VECTOR(F_WIDTH-1 downto 0);
@@ -43,6 +51,7 @@ entity KWS is
 --         debug_valid  : out std_logic;
 --         debug_t      : out std_logic_vector(T_WIDTH-1 downto 0);
 --         debug_f      : out std_logic_vector(F_WIDTH-1 downto 0)
+<<<<<<< HEAD
 =======
         -- Input Interface (from timestamp_gen)
 =======
@@ -65,6 +74,8 @@ entity KWS is
 --         debug_t      : out std_logic_vector(T_WIDTH-1 downto 0);
 --         debug_f      : out std_logic_vector(F_WIDTH-1 downto 0)
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
     );
 end KWS;
 
@@ -87,11 +98,14 @@ architecture Behavioral of KWS is
             in_f      : in  std_logic_vector(F_WIDTH-1 downto 0);
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
             busy      : out std_logic;
 >>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
 =======
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
             out_valid : out std_logic;
             out_t     : out std_logic_vector(T_WIDTH-1 downto 0);
             out_f     : out std_logic_vector(F_WIDTH-1 downto 0)
@@ -125,11 +139,14 @@ architecture Behavioral of KWS is
             is_valid  : in std_logic;
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
 =======
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
             out_valid : out std_logic;
             out_conf  : out std_logic_vector(PRECISION_GEN-1 downto 0);
             out_cls   : out std_logic_vector((8*20)-1 downto 0)
@@ -138,16 +155,20 @@ architecture Behavioral of KWS is
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     -- LIF signals
     signal lif_busy       : std_logic;
 >>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
 =======
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
     signal lif_out_valid  : std_logic;
     signal lif_out_t      : std_logic_vector(T_WIDTH-1 downto 0);
     signal lif_out_f      : std_logic_vector(F_WIDTH-1 downto 0);
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -155,6 +176,8 @@ architecture Behavioral of KWS is
 >>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
 =======
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
     signal fifo_din       : std_logic_vector(39 downto 0);
     signal fifo_wr_en     : std_logic;
     signal dout           : std_logic_vector(39 downto 0);
@@ -166,11 +189,14 @@ architecture Behavioral of KWS is
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     -- Output of FIFO -> Input of GCNN
 >>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
 =======
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
     signal valid_r        : std_logic := '0';
     signal t_r            : std_logic_vector(T_WIDTH-1 downto 0);
     signal f_r            : std_logic_vector(F_WIDTH-1 downto 0);
@@ -179,6 +205,7 @@ architecture Behavioral of KWS is
 
 begin
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -190,6 +217,8 @@ begin
 >>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
 =======
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
     lif_inst : lif
     GENERIC MAP (
         T_WIDTH     => T_WIDTH,
@@ -206,11 +235,14 @@ begin
         in_f      => in_f,
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         busy      => lif_busy,
 >>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
 =======
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
         out_valid => lif_out_valid,
         out_t     => lif_out_t,
         out_f     => lif_out_f
@@ -218,11 +250,15 @@ begin
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
     fifo_wr_en <= lif_out_valid; 
     fifo_din   <= lif_out_t & lif_out_f & '0'; 
 
     FIFO_CDC : fifo_generator_1
     PORT MAP (
+<<<<<<< HEAD
 =======
     -------------------------------------------------------------------------
     -- FIFO INSTANCE (CDC: 48 MHz -> 200 MHz)
@@ -239,6 +275,8 @@ begin
 =======
     PORT MAP (
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
         srst        => rst_ext,
         wr_clk      => clock_48,
         rd_clk      => clock_200,
@@ -250,6 +288,7 @@ begin
         empty       => empty,
         wr_rst_busy => wr_rst_busy,
         rd_rst_busy => rd_rst_busy
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     );
@@ -265,6 +304,10 @@ begin
     );
 
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+    );
+
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
     rd: process(clock_200, rst_ext)
     begin
         if rst_ext = '1' then
@@ -274,11 +317,14 @@ begin
             rd_en <= '0';
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
 =======
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
             if read_timer < THROUGHPUT then
                 read_timer <= read_timer + 1;
             end if;
@@ -293,6 +339,7 @@ begin
     end process;
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     
     unpack: process(clock_200, rst_ext)
         variable rd_en_d1 : std_logic := '0';
@@ -305,6 +352,11 @@ begin
     unpack: process(clock_200, rst_ext)
         variable rd_en_d1 : std_logic := '0';
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+    
+    unpack: process(clock_200, rst_ext)
+        variable rd_en_d1 : std_logic := '0';
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
     begin
         if rst_ext = '1' then
             valid_r <= '0';
@@ -312,6 +364,9 @@ begin
             f_r     <= (others => '0');
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
             rd_en_d1 := '0';
         elsif rising_edge(clock_200) then
             valid_r <= rd_en_d1;
@@ -329,6 +384,7 @@ begin
 --     debug_t     <= t_r;
 --     debug_f     <= f_r;
 
+<<<<<<< HEAD
 =======
 =======
             rd_en_d1 := '0';
@@ -354,6 +410,8 @@ begin
 --     debug_f     <= f_r;
 
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
     gcnn_inst : gcnn_top
     PORT MAP (
         clk       => clock_200,
@@ -363,11 +421,14 @@ begin
         is_valid  => valid_r,
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         
 >>>>>>> 37dca1f (HW: modified project structure, added LIF module, changed naming)
 =======
 >>>>>>> 7831012 (HW: modify KWS architecture for testing)
+=======
+>>>>>>> fb0443f1edbeeecd7de16c8196ab0c9a23a69f71
         out_valid => cnn_valid,
         out_conf  => cnn_conf,
         out_cls   => cnn_class
