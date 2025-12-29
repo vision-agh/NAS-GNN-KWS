@@ -1,5 +1,7 @@
 Input scale (32 bit):
  34470220
+Input scale temporal normalisation (32 bit):
+ 53515020
 Input zero point:
  125
 Weight scale (32 bit):
