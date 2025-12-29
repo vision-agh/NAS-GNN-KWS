@@ -20,7 +20,6 @@ def move_to_device(batch, dev):
 
 # Prepare dataset
 files = glob.glob(
-    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat/*/*"
     f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat/stop/*"    # or select class e.g. stop here
 )
 
@@ -31,7 +30,7 @@ ds = SpikingDS(files, cfg)
 
 # Prepare model
 model = KWS(cfg).to('cuda')
-ckpt = torch.load('example_result/kws/20251223_213525_fully_trained/best_model_calibration.pth')
+ckpt = torch.load('example_result/kws/20251225_002857_normalised/best_model_calibration.pth')
 model.load_state_dict(ckpt)
 model.eval()
 

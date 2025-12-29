@@ -102,7 +102,7 @@ persistent_workers = bool(NUM_WORKERS and NUM_WORKERS > 0)
 # 5. Model
 # -------------------------------------------------
 model = KWS(cfg).to(device)
-ckpt = torch.load('example_result/kws/20251223_213525_fully_trained/best_model_calibration.pth')
+ckpt = torch.load('example_result/kws/20251225_002857_normalised/best_model_calibration.pth')
 model.load_state_dict(ckpt)
 model.eval()
 model.quantize()
@@ -327,8 +327,8 @@ high_time_radius = [1000, 2000, 2500, 5000, 10000, 15000, 20000]
 div_factor = [5, 6, 7, 8, 9, 10, 11]
 weight = [16, 20, 25, 30, 32, 35, 40]
 
-for param in div_factor:
-    cfg.dataset.div_factor = param
+for param in channel_radius:
+    cfg.dataset.channel_radius = param
     print(cfg.dataset)
 
     test_ds = SpikingDS(test_files, cfg)
