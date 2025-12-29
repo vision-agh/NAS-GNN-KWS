@@ -1,8 +1,8 @@
 Input scale (32 bit):
  34470220
 Input scale temporal normalisation (32 bit):
- 53515020
- (remember to inverse diff calculation or include change in sing)Input scale channel normalisation (32 bit):
+ 53515020 (remember to inverse diff calculation or include change in sing)
+Input scale channel normalisation (32 bit):
  26757507072
 Input zero point:
  125
