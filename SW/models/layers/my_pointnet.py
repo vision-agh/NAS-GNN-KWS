@@ -277,8 +277,14 @@ class MyPointNetConv(nn.Module):
             raise RuntimeError("qlinear is not initialized. Call quantize() before exporting.")
 
         with open(file_name, "w") as f:
-            # scales / zps
             f.write(f"Input scale ({int(self.num_bits_obs)} bit):\n {int(self.qscale_in)}\n")
+
+            # This is based on normalisation in kws model!!!!!
+            temporal_scale = 1 / (self.qscale_in / self._Q * self.cfg.dataset.high_time_radius)
+            temporal_scale = (temporal_scale * self._Q).round()
+            f.write(f"Input scale temporal normalisation ({int(self.num_bits_obs)} bit):\n {int(temporal_scale)}\n")
+
+            
             f.write(f"Input zero point:\n {int(self.observer_input.zero_point)}\n")
             f.write(f"Weight scale ({int(self.num_bits_obs)} bit):\n {int(self.qscale_w)}\n")
             f.write(f"Weight zero point:\n {int(self.observer_weight.zero_point)}\n")
