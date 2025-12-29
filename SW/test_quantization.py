@@ -27,7 +27,7 @@ ds = SpikingDS(files, cfg)
 
 # Prepare model
 model = KWS(cfg).to('cuda')
-ckpt = torch.load('example_result/kws/20251223_213525_fully_trained/best_model_calibration.pth')
+ckpt = torch.load('example_result/kws/20251225_002857_normalised/best_model_calibration.pth')
 model.load_state_dict(ckpt)
 model.eval()
 
@@ -35,8 +35,8 @@ model.eval()
 model.quantize()
 
 # Create output directory for debug outputs
-path_debug = 'example_result/kws/20251223_213525_fully_trained/debug_outputs/'
-path_parameters = 'example_result/kws/20251223_213525_fully_trained/parameters/'
+path_debug = 'example_result/kws/20251225_002857_normalised/debug_outputs/'
+path_parameters = 'example_result/kws/20251225_002857_normalised/parameters/'
 os.makedirs(path_debug, exist_ok=True)
 os.makedirs(path_parameters, exist_ok=True)
 
