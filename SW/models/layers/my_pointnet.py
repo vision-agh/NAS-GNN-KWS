@@ -282,9 +282,12 @@ class MyPointNetConv(nn.Module):
             # This is based on normalisation in kws model!!!!!
             temporal_scale = 1 / (self.qscale_in / self._Q * self.cfg.dataset.high_time_radius)
             temporal_scale = (temporal_scale * self._Q).round()
-            f.write(f"Input scale temporal normalisation ({int(self.num_bits_obs)} bit):\n {int(temporal_scale)}\n")
+            f.write(f"Input scale temporal normalisation ({int(self.num_bits_obs)} bit):\n {int(temporal_scale)}\n (remember to inverse diff calculation or include change in sing)")
 
-            
+            channel_scale = 1 / (self.qscale_in / self._Q * self.cfg.dataset.channel_radius)
+            channel_scale = (channel_scale * self._Q).round()
+            f.write(f"Input scale channel normalisation ({int(self.num_bits_obs)} bit):\n {int(channel_scale)}\n")
+
             f.write(f"Input zero point:\n {int(self.observer_input.zero_point)}\n")
             f.write(f"Weight scale ({int(self.num_bits_obs)} bit):\n {int(self.qscale_w)}\n")
             f.write(f"Weight zero point:\n {int(self.observer_weight.zero_point)}\n")
