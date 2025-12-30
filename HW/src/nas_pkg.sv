@@ -11,7 +11,7 @@ package nas_pkg;
     parameter PRECISION_CONV2  = 8;                    
     parameter PRECISION_CONV3  = 8;                    
     parameter PRECISION_CONV4  = 8;                    
-    parameter CLS_NUM = 20;
+    parameter CLS_NUM = 11;
 
     parameter T_WIDTH  = 32; //Max of 1000000
     parameter T_DIFF_WIDTH  = 15; //Max of 20000
@@ -41,9 +41,9 @@ package nas_pkg;
     } edge_type;
 
     parameter DELTA_T_WIDTH = 15; //max value of 20000
-    parameter GEN_MULTIPLIER_T = 941192;
-    parameter [63:0] GEN_MULTIPLIER_F = 64'd7353064819; // (add 2^32)
-    parameter GEN_ZERO_POINT = 34;
+    parameter GEN_MULTIPLIER_T = 535150;
+    parameter [63:0] GEN_MULTIPLIER_F = 64'd4180860697; // (add 2^32)
+    parameter GEN_ZERO_POINT = 125;
 
     parameter THROUGHPUT = 20; // for FIFO read
     // LIF parameters

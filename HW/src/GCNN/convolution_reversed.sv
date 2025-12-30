@@ -233,9 +233,9 @@ module convolution_reversed #(
     assign dt_scaled_b = dt_expanded_b * MULTIPLIER_DIFF_T;
 
     always @(posedge clk) begin
-        features_a[INPUT_DIM] <= ena_reg ? ZERO_POINT_IN-(dt_scaled_a>>>32)-dt_scaled_a[31] : '0; //dif_t
+        features_a[INPUT_DIM] <= ena_reg ? ZERO_POINT_IN+(dt_scaled_a>>>32)+dt_scaled_a[31] : '0; //dif_t
         features_a[INPUT_DIM+1] <= ena_reg ? SCALE_IN[counter_read] : '0;
-        features_b[INPUT_DIM] <= (enb_reg && counter_read < F_RADIUS) ? ZERO_POINT_IN-(dt_scaled_b>>>32)-dt_scaled_b[31]  : ZERO_POINT_IN; //dif_t
+        features_b[INPUT_DIM] <= (enb_reg && counter_read < F_RADIUS) ? ZERO_POINT_IN+(dt_scaled_b>>>32)+dt_scaled_b[31]  : ZERO_POINT_IN; //dif_t
         features_b[INPUT_DIM+1] <= (enb_reg) ? SCALE_IN[F_RADIUS+1+counter_read] : '0;
     end
 
@@ -460,7 +460,7 @@ module convolution_reversed #(
     end
 
     delay_module #(
-        .N        ( 32 ),
+        .N        ( 40 ),
         .DELAY    ( 12  )
     ) delay_event (
         .clk   ( clk     ),

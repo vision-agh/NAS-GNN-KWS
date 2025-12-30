@@ -229,10 +229,11 @@ module convolution #(
     assign dt_scaled_a = dt_expanded_a * MULTIPLIER_DIFF_T;
     assign dt_scaled_b = dt_expanded_b * MULTIPLIER_DIFF_T;
 
+    // Changed for -1
     always @(posedge clk) begin
-        features_a[2] <= ena_reg ? ZERO_POINT_IN-(dt_scaled_a>>>32)-dt_scaled_a[31] : '0; //dif_t
+        features_a[2] <= ena_reg ? (dt_scaled_a>>>32)+dt_scaled_a[31]+ZERO_POINT_IN : '0; //dif_t
         features_a[3] <= ena_reg ? SCALE_IN[counter_read] : '0;
-        features_b[2] <= (enb_reg && counter_read < F_RADIUS) ? ZERO_POINT_IN-(dt_scaled_b>>>32)-dt_scaled_b[31]  : ZERO_POINT_IN; //dif_t
+        features_b[2] <= (enb_reg && counter_read < F_RADIUS) ? (dt_scaled_b>>>32)+dt_scaled_b[31]+ZERO_POINT_IN  : ZERO_POINT_IN; //dif_t
         features_b[3] <= (enb_reg) ? SCALE_IN[F_RADIUS+1+counter_read] : '0;
     end
     /////////////////////////////////////////////////////////////////
