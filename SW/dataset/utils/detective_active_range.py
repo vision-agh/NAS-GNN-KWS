@@ -1,40 +1,49 @@
 import numpy as np
 import cv2
 
-def detect_active_range(hist, bin_edges, T_high=None, T_low=None, cooldown_steps=5):
-    hist = hist.astype(np.float32)
-    hist_smoothed = cv2.GaussianBlur(hist.reshape(1, -1), (7, 1), 0).flatten()
+def detect_active_range(hist, bin_edges, cfg):
+    hist_smoothed = cv2.GaussianBlur(hist[None, :], (cfg.dataset.gausian_kernel_size, 1), 0)[0]
 
-    if T_high is None:
-        T_high = np.mean(hist_smoothed) + 0.5 * np.std(hist_smoothed)
-    if T_low is None:
-        T_low = 0.2 * T_high
+    m = hist_smoothed.mean()
+    s = hist_smoothed.std()
 
-    active = False
-    cooldown = 0
-    start_idx = None
-    end_idx = None
+    T_high = cfg.dataset.mean_scale * m + cfg.dataset.std_scale * s
+    T_low = cfg.dataset.low_percentage * T_high
 
-    for i, val in enumerate(hist_smoothed):
-        if not active and val >= T_high:
-            active = True
-            start_idx = i
-            cooldown = 0
-        elif active:
-            if val >= T_low:
-                cooldown = 0  # reset cooldown
-            else:
-                cooldown += 1
-                if cooldown >= cooldown_steps:
-                    end_idx = i - cooldown
-                    break  # end of activity
+    hs = hist_smoothed
 
-    if active and end_idx is None:
-        end_idx = len(hist_smoothed) - 1 
+    # find activation start
+    start_mask = hs >= T_high
+    if not np.any(start_mask):
+        return None, None, hs
 
-    if start_idx is not None and end_idx is not None:
-        start_time = bin_edges[start_idx]
-        end_time = bin_edges[end_idx + 1]
-        return start_time, end_time, hist_smoothed
+    start_idx = np.argmax(start_mask)   # first True
+
+    # examine only after start
+    tail = hs[start_idx:]
+
+    below_low = tail < T_low
+
+    # compute run-length via cumulative trick
+    # We need first index where below_low has cooldown_steps consecutive True
+    if cfg.dataset.cooldown_steps == 1:
+        fail_idx = np.argmax(below_low)
+        if below_low[fail_idx]:
+            end_idx = start_idx + fail_idx - 1
+        else:
+            end_idx = len(hs) - 1
     else:
-        return None, None, hist_smoothed
+        # use sliding window sum
+        # convolution gives count of True in window
+        window = np.ones(cfg.dataset.cooldown_steps, dtype=np.int32)
+        conv = np.convolve(below_low.astype(np.int32), window, mode='valid')
+        fail_pos = np.argmax(conv == cfg.dataset.cooldown_steps)
+
+        if conv[fail_pos] == cfg.dataset.cooldown_steps:
+            end_idx = start_idx + fail_pos - 1
+        else:
+            end_idx = len(hs) - 1
+
+    start_time = bin_edges[start_idx]
+    end_time = bin_edges[end_idx + 1]
+    return start_time, end_time, hs

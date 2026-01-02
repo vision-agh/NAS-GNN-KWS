@@ -16,20 +16,20 @@ class Recognition(Module):
         
         self.config = config
 
-        conv_ch = config.conv_channels
-        conv_bits = config.conv_bits
+        conv_ch = config.model.conv_channels
+        conv_bits = config.model.conv_bits
 
-        linear_ch = config.linear_channels
-        num_classes = config.num_classes
+        linear_ch = config.model.linear_channels
+        num_classes = config.model.num_classes
 
-        input_dim = config.features
+        input_dim = config.model.features
         
-        self.conv1 = MyPointNetConv(input_dim+2, conv_ch[0], bias=False, num_bits=conv_bits[0], first_layer=True)
-        self.conv2 = MyPointNetConv(conv_ch[0]+2, conv_ch[1], bias=False, num_bits=conv_bits[1])
-        self.conv3 = MyPointNetConv(conv_ch[1]+2, conv_ch[2], bias=False, num_bits=conv_bits[2])
-        self.conv4 = MyPointNetConv(conv_ch[2]+2, conv_ch[3], bias=False, num_bits=conv_bits[3])
+        self.conv1 = MyPointNetConv(input_dim+2, conv_ch[0], bias=False, num_bits=conv_bits[0], first_layer=True, cfg=config)
+        self.conv2 = MyPointNetConv(conv_ch[0]+2, conv_ch[1], bias=False, num_bits=conv_bits[1], cfg=config)
+        self.conv3 = MyPointNetConv(conv_ch[1]+2, conv_ch[2], bias=False, num_bits=conv_bits[2], cfg=config)
+        self.conv4 = MyPointNetConv(conv_ch[2]+2, conv_ch[3], bias=False, num_bits=conv_bits[3], cfg=config)
         
-        self.pooling = MyGlobalPooling(config.global_pooling, num_bits=conv_bits[3])
+        self.pooling = MyGlobalPooling(config.model.global_pooling, num_bits=conv_bits[3])
 
         self.fc1 = MyLinear(conv_ch[3], linear_ch, bias= True, num_bits=conv_bits[3])
         self.fc2 = MyLinear(linear_ch, num_classes, bias=True, num_bits=conv_bits[3])
@@ -41,29 +41,21 @@ class Recognition(Module):
     def forward(self, data):
         outputs = []
         x, pos, edge_index, batch = data['x'], data['pos'], data['edge_index'], data['batch']
-        # graph_gen_out(x, pos, edge_index, self.config, 'outputs/graph_out.txt')
-
         x = self.conv1(x, pos, edge_index)
-        # conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv1_out.txt')
         x = self.conv2(x, pos, edge_index)
-        # conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv2_out.txt')
         x = self.conv3(x, pos, edge_index)
-        # conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv3_out.txt')
         x = self.conv4(x, pos, edge_index)
-        # conv_first_gen_out(x, pos, edge_index, self.config, 'outputs/conv4_out.txt')
         x = self.pooling(x, batch, self.conv4.observer_output)
-        # np.savetxt('outputs/pooling.txt', x.detach().cpu().numpy().reshape(-1))
 
         x = self.fc1(x)
         if not self.quantize_mode:
             x = F.relu(x)
         else:
             x[x < self.fc1.observer_output.zero_point] = self.fc1.observer_output.zero_point
-
-        # np.savetxt('outputs/fc1.txt', x.detach().cpu().numpy().reshape(-1))
         x = self.fc2(x)
-        # np.savetxt('outputs/fc2.txt', x.detach().cpu().numpy().reshape(-1))
 
+        if self.quantize_mode.item():
+            x = self.fc2.observer_output.dequantize_tensor(x)
         return x
     
     def calibrate(self):

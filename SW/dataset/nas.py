@@ -7,119 +7,147 @@ import numpy as np
 from torch.utils.data import Dataset
 from dataset.utils.detective_active_range import detect_active_range
 from dataset.utils.nas_loader import nas_loader
-from dataset.utils.nas_settings import settings
 
 
-WORDS = [
-    "yes",
-    "no",
-    "up",
-    "down",
-    "left",
-    "right",
-    "on",
-    "off",
-    "stop",
-    "go",
+WORDS_COMM = [
+    "yes", "no", "up", "down", "left",
+    "right", "on", "off", "stop", "go", "unknown"
 ]
 
-WORD_TO_CLASS = {w: i for i, w in enumerate(WORDS)}
+WORDS_ALL = [
+    "backward", "bed", "bird", "cat", "dog",
+    "down", "eight", "five", "follow", "forward",
+    "four", "go", "happy", "house", "learn",
+    "left", "marvin", "nine", "no", "off",
+    "on", "one",  "right", "seven", "sheila",
+    "six", "stop", "three",  "tree", "two",
+    "up", "visual", "wow", "yes", "zero"
+]
+
+WORD_COMM_TO_CLASS = {w: i for i, w in enumerate(WORDS_COMM)}
+WORD_ALL_TO_CLASS = {w: i for i, w in enumerate(WORDS_ALL)}
 
 class SpikingDS(Dataset):
     def __init__(self,
                  files,
-                 config,
+                 cfg,
                  train: bool = False):
         
-        self.train = train
-        self.config = config
         self.files = files
+        self.cfg = cfg
+        self.train = train
 
-        self.polarity = config.polarity
-        self.stereo = config.stereo
-        self.cochlea = config.cochlea
-
-        self.num_channels = config.num_channels
-        self.channel_radius = config.channel_radius
-        self.low_time_radius = config.low_time_radius
-        self.high_time_radius = config.high_time_radius
-        self.time_leaky = config.time_leaky
-        self.norm_channel_filter = config.norm_channel_filter
-        self.threshold = config.threshold
-        self.time_window = config.time_window
-        self.skip_channels = config.skip_channels
-        self.features_aggregation = config.features_aggregation
-        
-        self.nas_settings = settings
-
-        self.edge_gen = edge_generator.EdgeGenerator(self.config.num_channels * (1 + self.polarity) * (1 + self.stereo), 
-                                                        self.config.channel_radius, 
-                                                        self.config.low_time_radius,
-                                                        self.config.high_time_radius,
-                                                        self.config.time_leaky, 
-                                                        self.config.norm_channel_filter,
-                                                        self.config.threshold,
-                                                        self.config.time_window,
-                                                        self.config.skip_channels,
-                                                        self.config.features_aggregation)
+        self.edge_gen = edge_generator.EdgeGenerator(self.cfg.dataset.num_channels * (1 + self.cfg.dataset.polarity) * (1 + self.cfg.dataset.stereo), 
+                                                    self.cfg.dataset.time_window,
+                                                    self.cfg.dataset.channel_radius, 
+                                                    self.cfg.dataset.low_time_radius,
+                                                    self.cfg.dataset.high_time_radius,
+                                                    self.cfg.dataset.skip_channels,
+                                                    self.cfg.dataset.features_aggregation,
+                                                    self.cfg.dataset.use_filtration,
+                                                    self.cfg.dataset.div_factor,
+                                                    self.cfg.dataset.weight,
+                                                    self.cfg.dataset.thresholds)
 
     def __len__(self) -> int:
         return len(self.files)
     
     def __getitem__(self, index):
         data_file = self.files[index]
-        y = self.filename_to_class(data_file.split('/')[-1])
+        y = self.filename_to_class(data_file)
 
-        addr, ts = nas_loader(data_file, self.nas_settings)
+        addr, ts = nas_loader(data_file, self.cfg.nas)
 
         pos = torch.from_numpy(np.column_stack((ts, addr))).float()
         pos[:, 0] = torch.round(pos[:, 0])
-        pos = pos[pos[:, 0] < self.time_window]
+        pos = pos[pos[:, 0] < 2 * self.cfg.dataset.time_window]
 
         # ---------------- COCHLEA FILTERING ----------------
-        if self.config.cochlea == 'left':
-            pos = pos[pos[:, 1] < self.num_channels * 2]
-        elif self.config.cochlea == 'right':
-            pos = pos[pos[:, 1] >= self.num_channels * 2]
+        if self.cfg.dataset.cochlea == 'left':
+            pos = pos[pos[:, 1] < self.cfg.dataset.num_channels * 2]
+        elif self.cfg.dataset.cochlea == 'right':
+            pos = pos[pos[:, 1] >= self.cfg.dataset.num_channels * 2]
         # 'both' keeps all
 
         if len(pos) == 0:
-            return None  # or handle empty window
+            return None # skip empty samples
 
         # ---------------- ADDRESS REMAPPING ----------------
         remapped_addr, polarity_feat = self.remap_addresses(pos[:, 1].long())
         pos[:, 1] = remapped_addr
 
+        pos_original = pos.clone()  # for debugging outputs, before graph generation
+
         # ---------------- EDGE GENERATION ------------------
         edge_index, x, pos = self.edge_gen.generate_edges(pos[:, 0], pos[:, 1], polarity_feat)
 
+        pos_filtered = pos.clone()  # for debugging outputs, after graph generation
 
-        pos[:, 0] = pos[:, 0] / self.time_window
-        pos[:, 1] = pos[:, 1] / self.num_channels
+        # ---------------- NORMALIZATION --------------------
+        pos[:, 0] = pos[:, 0] / self.cfg.dataset.time_window
+        pos[:, 1] = pos[:, 1] / self.cfg.dataset.num_channels if not self.cfg.dataset.polarity else pos[:, 1] / (self.cfg.dataset.num_channels * 2)
 
-        
         if pos.shape[0] < 2:
             return self.__getitem__((index + 1) % len(self))
+        
+        # --------------- ACTIVE RANGE DETECTION ----------------
+        bins = np.arange(0, pos[:,0].max()+self.cfg.dataset.bin_width, self.cfg.dataset.bin_width)
+        hist, bin_edges = np.histogram(pos[:,0].numpy(), bins=bins)
+        start_time, end_time, hist_smoothed = detect_active_range(hist.astype(np.float32), bin_edges, self.cfg)
+
+        cls_vec, conf_vec = self.generate_kws_vectors(pos, end_time, y)
 
         return {'x': x,
                 'pos': pos,
                 'edge_index': edge_index,
                 'y': y,
-                'file': data_file}
+                'cls_vec': cls_vec,
+                'conf_vec': conf_vec,
+                'start_time': start_time,
+                'end_time': end_time,
+                'hist_smoothed': hist_smoothed,
+                'file': data_file,
+                'pos_original': pos_original,
+                'pos_filtered': pos_filtered}
 
     
     def filename_to_class(self, fname):
-        match = re.match(r"([a-z]+)\d+", fname.lower())
-        if not match:
-            return None
+        word = fname.split('/')[-2]
+        if self.cfg.dataset.version == 'commands':
+            if word not in WORD_COMM_TO_CLASS:
+                word = 'unknown'
 
-        word = match.group(1)
-        return WORD_TO_CLASS.get(word)
+        if self.cfg.dataset.version == 'commands':
+            return WORD_COMM_TO_CLASS.get(word)
+        else:
+            return WORD_ALL_TO_CLASS.get(word)
+        
+    def generate_kws_vectors(self, pos, end_time, cls):
+        T = int(round(pos[:, 0].max().item() / self.cfg.dataset.bin_width)) + 1
+        cls_vec = torch.ones(T, dtype=torch.float32) * (35 if self.cfg.dataset.version == 'all' else 10)  # unknown class
+        conf_vec = torch.zeros(T, dtype=torch.float32)
+
+        if end_time is not None:
+            # index of bin, where words ends
+            bin_idx = int(end_time // self.cfg.dataset.bin_width)
+            if 0 <= bin_idx < T:
+                conf_vec[bin_idx] = 1.0
+                cls_vec[bin_idx] = cls
+
+                if bin_idx + 1 < T:
+                    conf_vec[bin_idx+1] = 0.5
+                    cls_vec[bin_idx+1] = cls
+
+                if bin_idx - 1 >= 0:
+                    conf_vec[bin_idx-1] = 0.5
+                    cls_vec[bin_idx-1] = cls
+
+        return cls_vec, conf_vec
 
     def decode_event(self, addr):
         # cochlea selection
-        coch = 0 if addr < (self.num_channels * 2) else 1
-        local = addr % (self.num_channels * 2)
+        coch = 0 if addr < (self.cfg.dataset.num_channels * 2) else 1
+        local = addr % (self.cfg.dataset.num_channels * 2)
 
         polarity = -1 if (local % 2 == 0) else 1
         channel = local // 2     # 0–63
@@ -134,8 +162,8 @@ class SpikingDS(Dataset):
         """
 
         # --- Decode raw event properties ---
-        coch = (addrs >= self.num_channels * 2).long()                 # 0 = left, 1 = right
-        local = addrs % (self.num_channels * 2)                          # 0–127 inside the cochlea
+        coch = (addrs >= self.cfg.dataset.num_channels * 2).long()                 # 0 = left, 1 = right
+        local = addrs % (self.cfg.dataset.num_channels * 2)                          # 0–127 inside the cochlea
         polarity = torch.where(local % 2 == 0, -1, 1)
         channel = local // 2                         # 0–63
 
@@ -143,11 +171,11 @@ class SpikingDS(Dataset):
         #   STEP 1: COCHLEA FILTERING AND NORMALIZATION
         # ================================================================
 
-        if self.cochlea == "left":
+        if self.cfg.dataset.cochlea == "left":
             # keep only left
             coch = torch.zeros_like(coch)
             # local already 0–127
-        elif self.cochlea == "right":
+        elif self.cfg.dataset.cochlea == "right":
             # keep only right
             coch = torch.zeros_like(coch)     # normalize right → 0
             # local still 0–127 because (addr % 128)
@@ -160,13 +188,13 @@ class SpikingDS(Dataset):
         # ================================================================
 
         # ---------- CASE A: polarity encoded into address (0–127) ----------
-        if self.polarity:
+        if self.cfg.dataset.polarity:
             # addr = channel*2 + (0=neg,1=pos)
             new_addr = channel * 2 + (polarity == 1).long()
 
             # If stereo and both cochleas → add offset 128 for right
-            if self.stereo and self.cochlea == "both":
-                new_addr = new_addr + coch * self.num_channels * 2
+            if self.cfg.dataset.stereo and self.cfg.dataset.cochlea == "both":
+                new_addr = new_addr + coch * self.cfg.dataset.num_channels * 2
 
             polarity_feat = None
 
@@ -175,69 +203,10 @@ class SpikingDS(Dataset):
             new_addr = channel                # 0–63
             polarity_feat = polarity.float()  # additional feature
 
-            if self.stereo and self.cochlea == "both":
-                new_addr = new_addr + coch * self.num_channels
+            if self.cfg.dataset.stereo and self.cfg.dataset.cochlea == "both":
+                new_addr = new_addr + coch * self.cfg.dataset.num_channels
 
         return new_addr, polarity_feat
-
-
-
-
-
-        # data['pos'][:, 0] = torch.round(data['pos'][:, 0])                  # Round to nearest microsecond
-        # data['pos'] = data['pos'][data['pos'][:, 0] < self.time_window]     # Cut data to time window
-
-        # # Generate edge_index and features
-
-        # edge_index, x = self.edge_gen.generate_edges(data['pos'][:, 0], 
-        #                                             data['pos'][:, 1])
-        
-        # data['edge_index'] = edge_index
-        # data['x'] = x
-
-        # if self.config.general.name == 'Google_Speech_Commands' and \
-        #       self.config.model.num_classes == 11:
-        #     data['y'] = torch.tensor(label_map[int(data['y'].item())], dtype=torch.long)
-        
-        # # Normalise node positions
-        # data['pos'][:, 0] = data['pos'][:, 0] / self.time_window
-        # data['pos'][:, 1] = data['pos'][:, 1] / self.num_channels
-
-
-        # bin_width = 0.01
-        # bins = np.arange(0, 1 + bin_width, bin_width)
-        # hist, bin_edges = np.histogram(data['pos'][:, 0].cpu().numpy(), bins=bins)
-        # hist = hist.astype(np.float32)
-
-        # start_time, end_time, hist_smoothed = detect_active_range(hist, bin_edges)
-
-        # data['end_time'] = end_time  # seconds in range [0,1]
-
-        # # --- here we generate labels y ---
-        # T = int(1.0 / bin_width)      # num of bins = 100
-        # y = torch.zeros(T, dtype=torch.float32)
-        # cls = torch.zeros(T, dtype=torch.float32)
-
-        # if end_time is not None:
-        #     # index of bin, where words ends
-        #     bin_idx = int(end_time // bin_width)
-        #     if 0 <= bin_idx < T:
-        #         y[bin_idx] = 1.0
-        #         cls[bin_idx] = data['y']
-
-        #         if bin_idx + 1 < T:
-        #             y[bin_idx+1] = 0.5
-        #             cls[bin_idx+1] = data['y']
-
-        #         if bin_idx - 1 >= 0:
-        #             y[bin_idx-1] = 0.5
-        #             cls[bin_idx-1] = data['y']
-
-        # data['keyword'] = y
-        # data['cls'] = cls
-
-        # return data
-
 
 if __name__ == '__main__':
     import yaml

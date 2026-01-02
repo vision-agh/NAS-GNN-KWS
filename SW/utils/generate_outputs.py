@@ -1,6 +1,26 @@
 import torch
+import numpy as np
 
-def graph_gen_out(
+def gen_input_events(events,
+                cfg,
+                name: str) -> dict:
+    """
+    Generate events output for the model.
+    
+    Args:
+        events (torch.Tensor): Input tensor.
+        cfg (dict): Configuration dictionary.
+    
+    Returns:
+        dict: Dictionary containing the events output.
+    """
+    with open(name, 'w') as f:
+        events = events.detach().cpu().numpy()
+        for pos in events:
+            f.write(f"{int(pos[0])} {int(pos[1])}\n")
+
+
+def gen_graph_out(
     x: torch.Tensor,
     pos: torch.Tensor,
     edge_index: torch.Tensor,
@@ -21,19 +41,18 @@ def graph_gen_out(
         dict: Dictionary containing the graph output.
     """
     
-    if cfg.debug:
-        with open(name, 'w') as f:
-                for idx, (features, position) in enumerate(zip(torch.flip(x, [1]), pos)):
-                    position = position.clone()
-                    position[0] = position[0] * 1000000
-                    position[1] = position[1] * 700
-                    f.write(str(features.to(torch.int32).tolist()) + " " + str(position.to(torch.int32).tolist()) + "\n")
-                    neighbours = edge_index[:, 1][edge_index[:, 0] == idx]
-                    for neighbour in neighbours:
-                        position = pos[neighbour].clone()
-                        position[0] = position[0] * 1000000
-                        position[1] = position[1] * 700
-                        f.write("     " + str(position.to(torch.int32).tolist()) + "\n")
+    with open(name, 'w') as f:
+            for idx, (features, position) in enumerate(zip(torch.flip(x, [1]), pos)):
+                position = position.clone()
+                position[0] = position[0]
+                position[1] = position[1]
+                f.write(str(features.to(torch.int32).tolist()) + " " + str(position.to(torch.int32).tolist()) + "\n")
+                neighbours = edge_index[:, 1][edge_index[:, 0] == idx]
+                for neighbour in neighbours:
+                    position = pos[neighbour].clone()
+                    position[0] = position[0]
+                    position[1] = position[1]
+                    f.write("     " + str(position.to(torch.int32).tolist()) + "\n")
 
 
 def conv_first_gen_out(
@@ -88,25 +107,6 @@ def conv_gen_out(
             fliped_features = torch.flip(x, [1])
             for i, j in zip(pos[sorted_indices], fliped_features[sorted_indices]):
                 f.write(str(i.to(torch.int32).tolist())+str(j.to(torch.int32).tolist())+"\n")
-
-
-def events_out(events,
-                cfg,
-                name: str) -> dict:
-    """
-    Generate events output for the model.
-    
-    Args:
-        events (torch.Tensor): Input tensor.
-        cfg (dict): Configuration dictionary.
-    
-    Returns:
-        dict: Dictionary containing the events output.
-    """
-    if cfg.debug:
-        with open(name, 'w') as f:
-            for pos in zip(events['pos']):
-                f.write(f"{pos[0]} {pos[1]}\n")
 
 def vector_out(
     x: torch.Tensor,
