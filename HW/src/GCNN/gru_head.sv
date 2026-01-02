@@ -108,7 +108,7 @@ module gru_head #(
                         h_z <= output_linear;
                     end
                     if (counter_mul_out == ((HEAD_DIM*2)+ITERATIONS)-1) delay_one <= 1;
-                    if (counter_mul_out == ((HEAD_DIM*2)+ITERATIONS)-1 && delay_one) begin
+                    if (counter_mul_out == ((HEAD_DIM*2)+ITERATIONS-1) && delay_one) begin
                         state <= IDLE;
                         delay_one <= 0;
                         counter <= HEAD_DIM*3;
@@ -194,6 +194,7 @@ module gru_head #(
                      if (counter_mul_out == ((HEAD_DIM*8)+CLS_NUM) && delay_one) begin
                          state <= GRU_H;
                          counter <= '0;
+                         delay_one <= '0;
                          out_cls <= output_linear[CLS_NUM-1:0];
                          out_conf <= output_linear[CLS_NUM];
                          out_valid <= 1;

@@ -99,7 +99,7 @@ module kws_ut;
             end
 
             // Finish simulation after 50.1 ms
-            if (current_time_ns > 2000000000) begin
+            if (current_time_ns > 100000000) begin
                 $fclose(file_out);
                 $finish;
             end
