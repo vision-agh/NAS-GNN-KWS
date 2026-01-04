@@ -181,7 +181,9 @@ module gcnn_top #(
 
     logic head_valid;
 
-    maxpool u_pool (
+    maxpool #(
+        .ZERO_POINT ( CONV4_ZERO_POINT_OUT )
+    ) u_pool (
         .clk          ( clk              ),
         .reset        ( reset            ),
         .in_event     ( event_to_pool    ),
