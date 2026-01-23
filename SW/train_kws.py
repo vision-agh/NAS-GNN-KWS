@@ -313,7 +313,7 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
 
         loss_cls = torch.nn.functional.cross_entropy(sel_logits, sel_targets)
 
-        loss = loss_conf + 5.0 * loss_cls
+        loss = loss_conf + loss_cls
 
         ts_acc, acc = _timestamp_accuracy(
             conf_logits, cls_logits, batch["conf_vec"], batch["cls_vec"]
