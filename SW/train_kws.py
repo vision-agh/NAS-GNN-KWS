@@ -2,12 +2,16 @@ import os
 import glob
 import random
 import datetime
+import multiprocessing as mp
 from pathlib import Path
+from omegaconf import OmegaConf
 
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+
+import wandb  # ✅ NEW
 
 from dataset.nas import SpikingDS
 from configs.build_config import build_config
@@ -28,9 +32,34 @@ EPOCHS = 50
 EPOCHS_CALIBRATION = 5
 SGD_MOMENTUM = 0.9
 
-BATCH_SIZE = 4
-NUM_WORKERS = 4
+BATCH_SIZE = 16
+NUM_WORKERS = 8
 PIN_MEMORY = True
+
+mp.set_start_method('fork', force=True)
+# -------------------------------------------------
+# WandB config (CHANGE HERE)
+# -------------------------------------------------
+WANDB_PROJECT = "kws-nas-gsc"
+WANDB_ENTITY = None  # e.g. "your_team" (or leave None)
+WANDB_TAGS = ["kws", "event-camera", "nas-gsc"]
+WANDB_MODE = os.environ.get("WANDB_MODE", "online")  # set to "offline" if needed
+WANDB_LOG_GRADS = True  # wandb.watch(model, log="all")
+WANDB_LOG_CODE = True   # save your code snapshot
+
+
+def count_parameters(model: torch.nn.Module):
+    total = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return total, trainable
+
+
+def log_metrics_wandb(metrics: dict, prefix: str, step: int):
+    """
+    Adds a prefix to metric keys and logs them in wandb.
+    """
+    log_dict = {f"{prefix}/{k}": v for k, v in metrics.items()}
+    wandb.log(log_dict, step=step)
 
 
 # -------------------------------------------------
@@ -48,7 +77,8 @@ torch.backends.cudnn.benchmark = False
 # -------------------------------------------------
 # 2. Files & split
 # -------------------------------------------------
-dataset_root = Path.home() / "Datasets" / "NAS_GSC" / "dataset_aedat"
+# dataset_root = Path.home() / "Datasets" / "NAS_GSC" / "dataset_aedat_w_delays_whole"
+dataset_root = Path("/net/storage/pr3/plgrid/plgg_dvs_phd/Audio/dataset_aedat_w_delays_whole")
 files = glob.glob(str(dataset_root / "*" / "*"))
 
 # Filter out anything that is not a file (defensive)
@@ -71,8 +101,8 @@ def file_key(path_str: str) -> str:
     Given full file path .../class/file.wav.aedat
     """
     p = Path(path_str)
-    cls = p.parent.name           # e.g., right
-    stem = p.stem                 # file.wav  (strips .aedat)
+    cls = p.parent.name
+    stem = p.stem
     return f"{cls}/{stem}"
 
 
@@ -148,6 +178,77 @@ val_dl = DataLoader(
 # -------------------------------------------------
 model = KWS(cfg).to(device)
 
+total_params, trainable_params = count_parameters(model)
+
+
+# -------------------------------------------------
+# ✅ 5.5 WandB init (AFTER cfg + model exist)
+# -------------------------------------------------
+date_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+run_name = f"kws_{date_time}"
+
+
+# 1) Your "searchable" hyperparams
+wandb_config = {
+    # training
+    "seed": SEED,
+    "optimizer_type": OPTIMIZER_TYPE,
+    "lr": LR,
+    "lr_calibration": LR_CALIBRATION,
+    "weight_decay": WEIGHT_DECAY,
+    "use_cosine_scheduler": USE_COSINE_SCHEDULER,
+    "epochs": EPOCHS,
+    "epochs_calibration": EPOCHS_CALIBRATION,
+    "sgd_momentum": SGD_MOMENTUM,
+    "batch_size": BATCH_SIZE,
+    "num_workers": NUM_WORKERS,
+    "pin_memory": PIN_MEMORY,
+
+    # data
+    "dataset_root": str(dataset_root),
+    "n_train_files": len(train_files),
+    "n_val_files": len(val_files),
+    "n_test_files": len(test_files),
+
+    # model meta
+    "device": str(device),
+    "total_params": total_params,
+    "trainable_params": trainable_params,
+}
+
+wandb.init(
+    project=WANDB_PROJECT,
+    entity=WANDB_ENTITY,
+    name=run_name,
+    config=wandb_config,
+    tags=WANDB_TAGS,
+    mode=WANDB_MODE,
+)
+
+# 2) Store the full cfg as YAML (safe + readable)
+wandb.run.summary["cfg_yaml"] = OmegaConf.to_yaml(cfg)
+
+# 3) (Optional) Also store the resolved dict version in summary
+wandb.run.summary["cfg_dict"] = OmegaConf.to_container(cfg, resolve=True)
+
+# Log model architecture text to W&B (very useful for reproducibility)
+wandb.run.summary["model_architecture"] = str(model)
+wandb.run.summary["total_params"] = total_params
+wandb.run.summary["trainable_params"] = trainable_params
+
+# Optional: save code snapshot
+if WANDB_LOG_CODE:
+    try:
+        wandb.run.log_code(".")
+    except Exception as e:
+        print(f"[wandb] log_code failed: {e}")
+
+# Optional: watch gradients + weights
+if WANDB_LOG_GRADS:
+    # log="all" logs grads + weights histograms; can be heavy
+    wandb.watch(model, log="all", log_freq=50)
+
+
 # -------------------------------------------------
 # 6. Optimizers
 # -------------------------------------------------
@@ -183,7 +284,6 @@ print(f"Using optimizer: {OPTIMIZER_TYPE}")
 
 # -------------------------------------------------
 # 7. Schedulers (Cosine)
-#   - main scheduler steps main optimizer only
 # -------------------------------------------------
 scheduler = None
 scheduler_calibration = None
@@ -214,45 +314,31 @@ def _timestamp_accuracy(
     gt_cls_idx: torch.Tensor,
     tolerance: int = 1,
 ):
-    """
-    Hit if:
-    - predicted timestamp within tolerance of GT timestamp
-    - predicted class at GT timestamp equals GT class at GT timestamp
-    Returns:
-        (timestamp+class acc with tolerance), (class acc at GT timestamp)
-    """
-    # Ensure shapes [B, T]
     if gt_keyword.dim() != 2 or gt_cls_idx.dim() != 2:
-        raise ValueError(f"Expected gt_keyword and gt_cls_idx to be [B,T], got {gt_keyword.shape} and {gt_cls_idx.shape}")
+        raise ValueError(
+            f"Expected gt_keyword and gt_cls_idx to be [B,T], got {gt_keyword.shape} and {gt_cls_idx.shape}"
+        )
 
     B, T = gt_keyword.shape
     dev = conf_logits.device
 
-    gt_ts = gt_keyword.argmax(dim=-1)            # [B]
-    pred_ts = conf_logits.argmax(dim=-1)         # [B]
+    gt_ts = gt_keyword.argmax(dim=-1)
+    pred_ts = conf_logits.argmax(dim=-1)
 
-    # cls_logits expected [B, C, T] -> convert to [B, T, C]
-    pred_cls_btC = cls_logits.permute(0, 2, 1)   # [B, T, C]
-
+    pred_cls_btC = cls_logits.permute(0, 2, 1)
     idx = torch.arange(B, device=dev)
 
-    # Pred class evaluated at GT timestamp (per your metric definition)
-    pred_lbl = pred_cls_btC[idx, gt_ts].argmax(dim=-1)  # [B]
-    gt_lbl = gt_cls_idx[idx, gt_ts].long()              # [B]
+    pred_lbl = pred_cls_btC[idx, gt_ts].argmax(dim=-1)
+    gt_lbl = gt_cls_idx[idx, gt_ts].long()
 
     time_ok = (pred_ts - gt_ts).abs() <= tolerance
     return ((pred_lbl == gt_lbl) & time_ok).float().mean(), (pred_lbl == gt_lbl).float().mean()
 
 
 def _timestamp_errors(conf_logits: torch.Tensor, gt_keyword: torch.Tensor):
-    """
-    Returns:
-        mean_abs_dt_steps: mean absolute timestamp error [timesteps]
-        mean_signed_dt_steps: signed bias (pred - gt) [timesteps]
-    """
-    gt_ts = gt_keyword.argmax(dim=-1)    # [B]
-    pred_ts = conf_logits.argmax(dim=-1) # [B]
-    dt = (pred_ts - gt_ts).float()       # + => late, - => early
+    gt_ts = gt_keyword.argmax(dim=-1)
+    pred_ts = conf_logits.argmax(dim=-1)
+    dt = (pred_ts - gt_ts).float()
     return dt.abs().mean(), dt.mean()
 
 
@@ -278,14 +364,11 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
         desc = "Training" if training else "Eval"
 
     for batch in tqdm(dataloader, desc=desc):
-        
         batch = move_to_device(batch, dev)
         conf_logits, cls_logits = model(batch)
 
-        # BCE targets must be float
         conf_target = batch["conf_vec"].to(dtype=conf_logits.dtype)
 
-        # pos_weight must be floating tensor on the correct device/dtype
         T = conf_target.shape[1]
         pos_weight = torch.full(
             (T,),
@@ -301,15 +384,14 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
             reduction="mean",
         )
 
-        # Select class prediction at predicted timestamp (ts_idx)
-        ts_idx = conf_logits.argmax(dim=-1)            # [B]
+        ts_idx = conf_logits.argmax(dim=-1)
         B = conf_logits.size(0)
 
-        cls_logits_btC = cls_logits.permute(0, 2, 1)   # [B, T, C]
+        cls_logits_btC = cls_logits.permute(0, 2, 1)
         idx = torch.arange(B, device=dev)
 
-        sel_logits = cls_logits_btC[idx, ts_idx]       # [B, C]
-        sel_targets = batch["cls_vec"][idx, ts_idx].long()  # [B]
+        sel_logits = cls_logits_btC[idx, ts_idx]
+        sel_targets = batch["cls_vec"][idx, ts_idx].long()
 
         loss_cls = torch.nn.functional.cross_entropy(sel_logits, sel_targets)
 
@@ -323,7 +405,6 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
             conf_logits, batch["conf_vec"]
         )
 
-        # cfg.dataset.bin_width assumed to be milliseconds per bin
         bin_width = float(cfg.dataset.bin_width)
         mean_abs_dt_ms = mean_abs_dt_steps * bin_width
         mean_signed_dt_ms = mean_signed_dt_steps * bin_width
@@ -346,12 +427,6 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
 
         total += B
 
-        # for quick testing
-        
-        # if total > 500:
-        #     break
-
-    # Avoid divide-by-zero in edge cases
     if total == 0:
         raise RuntimeError("Dataloader produced zero samples.")
 
@@ -371,16 +446,26 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
 # -------------------------------------------------
 # 9. Output folder
 # -------------------------------------------------
-folder_path = f"results/kws/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+folder_path = f"results/kws/{date_time}"
 os.makedirs(folder_path, exist_ok=True)
 best_val_loss = float("inf")
 
+# Log local output directory
+wandb.run.summary["output_dir"] = folder_path
+
+
 # -------------------------------------------------
-# 10. Training loop
+# 10. Training loop (MAIN)
 # -------------------------------------------------
 for epoch in range(EPOCHS):
     model.train()
     train_metrics = one_epoch(model, train_dl, optimizer, device, cfg, desc="Training")
+
+    # log LR + metrics
+    cur_lr = float(optimizer.param_groups[0]["lr"])
+    wandb.log({"train/lr": cur_lr}, step=epoch)
+    log_metrics_wandb(train_metrics, prefix="train", step=epoch)
+
     print(
         f"Epoch {epoch+1}/{EPOCHS} | "
         f"Train Loss: {train_metrics['avg_loss']:.4f} | "
@@ -397,6 +482,9 @@ for epoch in range(EPOCHS):
     model.eval()
     with torch.no_grad():
         val_metrics = one_epoch(model, val_dl, optimizer=None, dev=device, cfg=cfg, desc="Validation")
+
+    log_metrics_wandb(val_metrics, prefix="val", step=epoch)
+
     print(
         f"Epoch {epoch+1}/{EPOCHS} | "
         f"Val Loss: {val_metrics['avg_loss']:.4f} | "
@@ -410,10 +498,28 @@ for epoch in range(EPOCHS):
         f"Val Dt Signed ms: {val_metrics['mean_signed_dt_ms']:.2f}"
     )
 
+    # Save best model + log as artifact
     if val_metrics["avg_loss"] < best_val_loss:
         best_val_loss = val_metrics["avg_loss"]
-        torch.save(model.state_dict(), os.path.join(folder_path, "best_model.pth"))
+        best_ckpt_path = os.path.join(folder_path, "best_model.pth")
+        torch.save(model.state_dict(), best_ckpt_path)
         print(f"New best model saved with Val Loss: {best_val_loss:.4f}")
+
+        wandb.run.summary["best_val_loss"] = best_val_loss
+        wandb.run.summary["best_epoch"] = epoch
+
+        artifact = wandb.Artifact(
+            name="best_model_main",
+            type="model",
+            metadata={
+                "best_val_loss": float(best_val_loss),
+                "epoch": int(epoch),
+                "optimizer": OPTIMIZER_TYPE,
+                "lr": LR,
+            },
+        )
+        artifact.add_file(best_ckpt_path)
+        wandb.log_artifact(artifact)
 
     if scheduler is not None:
         scheduler.step()
@@ -429,6 +535,10 @@ model.load_state_dict(torch.load(best_path, map_location=device))
 model.eval()
 with torch.no_grad():
     test_metrics = one_epoch(model, test_dl, optimizer=None, dev=device, cfg=cfg, desc="Test")
+
+# log test metrics (use a distinct step so plots don't overlap)
+test_step = EPOCHS
+log_metrics_wandb(test_metrics, prefix="test", step=test_step)
 
 print(
     f"Best Model Test | "
@@ -450,9 +560,19 @@ print(
 model.calibrate()
 best_val_loss = float("inf")
 
+# (optional) define a step offset so the calibration curves don't overlap main training
+calib_step_offset = EPOCHS + 10
+
 for epoch in range(EPOCHS_CALIBRATION):
+    step = calib_step_offset + epoch
+
     model.train()
     train_metrics = one_epoch(model, train_dl, optimizer_calibration, device, cfg, desc="Calibration Train")
+
+    cur_lr = float(optimizer_calibration.param_groups[0]["lr"])
+    wandb.log({"calib_train/lr": cur_lr}, step=step)
+    log_metrics_wandb(train_metrics, prefix="calib_train", step=step)
+
     print(
         f"Calib Epoch {epoch+1}/{EPOCHS_CALIBRATION} | "
         f"Train Loss: {train_metrics['avg_loss']:.4f} | "
@@ -469,6 +589,9 @@ for epoch in range(EPOCHS_CALIBRATION):
     model.eval()
     with torch.no_grad():
         val_metrics = one_epoch(model, val_dl, optimizer=None, dev=device, cfg=cfg, desc="Calibration Val")
+
+    log_metrics_wandb(val_metrics, prefix="calib_val", step=step)
+
     print(
         f"Calib Epoch {epoch+1}/{EPOCHS_CALIBRATION} | "
         f"Val Loss: {val_metrics['avg_loss']:.4f} | "
@@ -484,8 +607,25 @@ for epoch in range(EPOCHS_CALIBRATION):
 
     if val_metrics["avg_loss"] < best_val_loss:
         best_val_loss = val_metrics["avg_loss"]
-        torch.save(model.state_dict(), os.path.join(folder_path, "best_model_calibration.pth"))
+        best_calib_ckpt_path = os.path.join(folder_path, "best_model_calibration.pth")
+        torch.save(model.state_dict(), best_calib_ckpt_path)
         print(f"New best calibrated model saved with Val Loss: {best_val_loss:.4f}")
+
+        wandb.run.summary["best_calib_val_loss"] = float(best_val_loss)
+        wandb.run.summary["best_calib_epoch"] = int(epoch)
+
+        artifact = wandb.Artifact(
+            name="best_model_calibrated",
+            type="model",
+            metadata={
+                "best_calib_val_loss": float(best_val_loss),
+                "epoch": int(epoch),
+                "optimizer": OPTIMIZER_TYPE,
+                "lr_calibration": LR_CALIBRATION,
+            },
+        )
+        artifact.add_file(best_calib_ckpt_path)
+        wandb.log_artifact(artifact)
 
     if scheduler_calibration is not None:
         scheduler_calibration.step()
@@ -501,6 +641,9 @@ model.load_state_dict(torch.load(best_calib_path, map_location=device))
 model.eval()
 with torch.no_grad():
     test_metrics = one_epoch(model, test_dl, optimizer=None, dev=device, cfg=cfg, desc="Test (Calibrated)")
+
+calib_test_step = calib_step_offset + EPOCHS_CALIBRATION + 1
+log_metrics_wandb(test_metrics, prefix="test_calibrated", step=calib_test_step)
 
 print(
     f"Best Calibrated Model Test | "
@@ -525,6 +668,9 @@ model.eval()
 with torch.no_grad():
     test_metrics = one_epoch(model, test_dl, optimizer=None, dev=device, cfg=cfg, desc="Test (Quantized)")
 
+quant_step = calib_test_step + 1
+log_metrics_wandb(test_metrics, prefix="test_quantized", step=quant_step)
+
 print(
     f"Final Test after Quantization | "
     f"Test Loss: {test_metrics['avg_loss']:.4f} | "
@@ -537,3 +683,5 @@ print(
     f"Test Dt Abs ms: {test_metrics['mean_abs_dt_ms']:.2f} | "
     f"Test Dt Signed ms: {test_metrics['mean_signed_dt_ms']:.2f}"
 )
+
+wandb.finish()
