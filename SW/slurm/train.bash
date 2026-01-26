@@ -4,12 +4,11 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64G
-#SBATCH --time=0:05:00
+#SBATCH --time=48:00:00
 #SBATCH --account=plgevents-gpu-gh200
 #SBATCH --partition=plgrid-gpu-gh200
-#SBATCH --output=outputs/job-%j.out
-#SBATCH --error=outputs/job-%j.err
-
+#SBATCH --output=outputs/%x-%A_%a.out
+#SBATCH --error=outputs/%x-%A_%a.err
 
 # IMPORTANT: load the modules for machine learning tasks and libraries
 ml ML-bundle/25.04

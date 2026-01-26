@@ -12,7 +12,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-import wandb  # ✅ NEW
+import wandb
 
 from dataset.nas import SpikingDS
 from configs.build_config import build_config
@@ -61,6 +61,65 @@ def log_metrics_wandb(metrics: dict, prefix: str, step: int):
     """
     log_dict = {f"{prefix}/{k}": v for k, v in metrics.items()}
     wandb.log(log_dict, step=step)
+
+import json
+import socket
+import subprocess
+
+def safe_run(cmd):
+    """Run a shell command safely and return output or 'N/A'."""
+    try:
+        return subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode().strip()
+    except Exception:
+        return "N/A"
+
+def collect_slurm_info():
+    """Collect useful SLURM info if running under SLURM."""
+    keys = [
+        "SLURM_JOB_ID", "SLURM_ARRAY_JOB_ID", "SLURM_ARRAY_TASK_ID",
+        "SLURM_JOB_NAME", "SLURM_PARTITION", "SLURM_ACCOUNT",
+        "SLURM_NODELIST", "SLURM_CPUS_PER_TASK", "SLURM_GPUS",
+        "SLURM_NTASKS", "SLURM_MEM_PER_NODE", "SLURM_MEM_PER_CPU",
+        "SLURM_SUBMIT_DIR", "SLURM_SUBMIT_HOST",
+    ]
+    info = {k: os.environ.get(k, None) for k in keys}
+    info["hostname"] = socket.gethostname()
+    info["cwd"] = os.getcwd()
+    return info
+
+def init_run_dir(date_time: str, overrides: list[str], root: str = "runs/kws"):
+    run_id = os.environ.get("SLURM_JOB_ID", "local")
+    task_id = os.environ.get("SLURM_ARRAY_TASK_ID", "0")
+    host = socket.gethostname()
+
+    # One single directory per run
+    run_dir = Path(root) / f"{date_time}_job{run_id}_task{task_id}_{host}"
+    (run_dir / "checkpoints").mkdir(parents=True, exist_ok=True)
+    (run_dir / "metadata").mkdir(parents=True, exist_ok=True)
+    (run_dir / "wandb").mkdir(parents=True, exist_ok=True)
+
+    # Save CLI overrides + command
+    (run_dir / "metadata" / "overrides.txt").write_text("\n".join(overrides) + "\n")
+    (run_dir / "metadata" / "command.txt").write_text(" ".join(os.sys.argv) + "\n")
+
+    # Save SLURM info
+    slurm_info = collect_slurm_info()
+    OmegaConf.save(OmegaConf.create(slurm_info), run_dir / "metadata" / "slurm_env.yaml")
+
+    # Save pip freeze snapshot (useful for reproducibility)
+    try:
+        pip_freeze = safe_run(["pip", "freeze"])
+        (run_dir / "metadata" / "pip_freeze.txt").write_text(pip_freeze + "\n")
+    except Exception:
+        pass
+
+    # Save git snapshot (optional)
+    git_commit = safe_run(["git", "rev-parse", "HEAD"])
+    git_status = safe_run(["git", "status", "--porcelain"])
+    (run_dir / "metadata" / "git_commit.txt").write_text(git_commit + "\n")
+    (run_dir / "metadata" / "git_status.txt").write_text(git_status + "\n")
+
+    return run_dir
 
 
 # -------------------------------------------------
@@ -143,6 +202,16 @@ cfg = build_config(
 )
 
 print("FINAL CFG:\n", OmegaConf.to_yaml(cfg))
+
+# -------------------------------------------------
+# ✅ Create ONE unified run directory
+# -------------------------------------------------
+date_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+run_dir = init_run_dir(date_time=date_time, overrides=overrides, root="runs/kws")
+
+# Save FULL resolved config inside this folder
+OmegaConf.save(cfg, run_dir / "config.yaml")
+# -------------------------------------------------
 
 train_ds = SpikingDS(train_files, cfg)
 test_ds = SpikingDS(test_files, cfg)
@@ -232,6 +301,8 @@ wandb_config = {
     "trainable_params": trainable_params,
 }
 
+run_name = run_dir.name  # nice: folder name matches wandb run name
+
 wandb.init(
     project=WANDB_PROJECT,
     entity=WANDB_ENTITY,
@@ -239,10 +310,12 @@ wandb.init(
     config=wandb_config,
     tags=WANDB_TAGS,
     mode=WANDB_MODE,
+    dir=str(run_dir / "wandb"),  # ✅ wandb files go inside the run folder
 )
 
 # 2) Store the full cfg as YAML (safe + readable)
 wandb.run.summary["cfg_yaml"] = OmegaConf.to_yaml(cfg)
+wandb.run.summary["output_dir"] = str(run_dir)
 
 # 3) (Optional) Also store the resolved dict version in summary
 wandb.run.summary["cfg_dict"] = OmegaConf.to_container(cfg, resolve=True)
@@ -462,10 +535,8 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
 # -------------------------------------------------
 # 9. Output folder
 # -------------------------------------------------
-folder_path = f"results/kws/{date_time}"
-os.makedirs(folder_path, exist_ok=True)
+folder_path = str(run_dir)
 best_val_loss = float("inf")
-
 # Log local output directory
 wandb.run.summary["output_dir"] = folder_path
 
@@ -517,7 +588,7 @@ for epoch in range(EPOCHS):
     # Save best model + log as artifact
     if val_metrics["avg_loss"] < best_val_loss:
         best_val_loss = val_metrics["avg_loss"]
-        best_ckpt_path = os.path.join(folder_path, "best_model.pth")
+        best_ckpt_path = str(run_dir / "checkpoints" / "best_model.pth")
         torch.save(model.state_dict(), best_ckpt_path)
         print(f"New best model saved with Val Loss: {best_val_loss:.4f}")
 
@@ -545,7 +616,7 @@ for epoch in range(EPOCHS):
 # 11. Test best model
 # -------------------------------------------------
 print("Testing best model on test set...")
-best_path = os.path.join(folder_path, "best_model.pth")
+best_path = str(run_dir / "checkpoints" / "best_model.pth")
 model.load_state_dict(torch.load(best_path, map_location=device))
 
 model.eval()
@@ -623,7 +694,7 @@ for epoch in range(EPOCHS_CALIBRATION):
 
     if val_metrics["avg_loss"] < best_val_loss:
         best_val_loss = val_metrics["avg_loss"]
-        best_calib_ckpt_path = os.path.join(folder_path, "best_model_calibration.pth")
+        best_calib_ckpt_path = str(run_dir / "checkpoints" / "best_model_calibration.pth")
         torch.save(model.state_dict(), best_calib_ckpt_path)
         print(f"New best calibrated model saved with Val Loss: {best_val_loss:.4f}")
 
@@ -651,7 +722,7 @@ for epoch in range(EPOCHS_CALIBRATION):
 # 13. Test best calibrated model
 # -------------------------------------------------
 print("Testing best calibrated model on test set...")
-best_calib_path = os.path.join(folder_path, "best_model_calibration.pth")
+best_calib_path = str(run_dir / "checkpoints" / "best_model_calibration.pth")
 model.load_state_dict(torch.load(best_calib_path, map_location=device))
 
 model.eval()

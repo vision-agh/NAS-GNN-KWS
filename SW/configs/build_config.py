@@ -11,9 +11,12 @@ def generate_exponential_thresholds(num_channels, start=64, end=32):
         thresholds.append(int(round(t)))
     return thresholds
 
-def build_config(dataset_cfg_path="configs/dataset.yaml",
-                 nas_cfg_path="configs/nas.yaml",
-                 model_cfg_path="configs/recognition.yaml"):
+def build_config(
+    dataset_cfg_path="configs/dataset.yaml",
+    nas_cfg_path="configs/nas.yaml",
+    model_cfg_path="configs/kws.yaml",
+    overrides=None,
+):
     dataset_cfg = OmegaConf.load(dataset_cfg_path)
     nas_cfg = OmegaConf.load(nas_cfg_path)
     model_cfg = OmegaConf.load(model_cfg_path)
@@ -24,8 +27,15 @@ def build_config(dataset_cfg_path="configs/dataset.yaml",
         "model": model_cfg,
     })
 
-    # TODO: implement real threshold generation logic
-    # thresholds = generate_thresholds(cfg.dataset.num_channels * (2 if cfg.dataset.polarity else 1))
-    thresholds = generate_exponential_thresholds(cfg.dataset.num_channels * (2 if cfg.dataset.polarity else 1))
+    # Apply overrides like: ["dataset.num_channels=8", "model.hidden_dim=128"]
+    if overrides:
+        override_cfg = OmegaConf.from_dotlist(overrides)
+        cfg = OmegaConf.merge(cfg, override_cfg)
+
+    # Recompute thresholds AFTER overrides (important!)
+    thresholds = generate_exponential_thresholds(
+        cfg.dataset.num_channels * (2 if cfg.dataset.polarity else 1)
+    )
     cfg.dataset.thresholds = thresholds
+
     return cfg
