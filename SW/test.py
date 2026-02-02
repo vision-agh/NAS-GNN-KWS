@@ -72,17 +72,23 @@ def build_splits(dataset_root: Path):
 
 
 # -------------------------
-# Macro F1 helper (NEW)
+# F1 helpers (macro + per-class)  (NEW/REPLACEMENT)
 # -------------------------
-def macro_f1_from_labels(y_true: torch.Tensor, y_pred: torch.Tensor, num_classes: int, eps: float = 1e-12) -> float:
+def f1_stats_from_labels(
+    y_true: torch.Tensor,
+    y_pred: torch.Tensor,
+    num_classes: int,
+    eps: float = 1e-12,
+):
     """
-    Computes macro F1 over classes that appear in y_true (support>0).
-    y_true, y_pred: [N] int64 tensors on CPU or GPU.
+    Returns macro F1 (over classes present in y_true) + per-class precision/recall/f1/support.
+    No sklearn needed.
+
+    y_true, y_pred: [N] int64
     """
     y_true = y_true.to(torch.int64).view(-1)
     y_pred = y_pred.to(torch.int64).view(-1)
 
-    # confusion matrix via bincount
     valid = (y_true >= 0) & (y_true < num_classes) & (y_pred >= 0) & (y_pred < num_classes)
     y_true = y_true[valid]
     y_pred = y_pred[valid]
@@ -91,8 +97,8 @@ def macro_f1_from_labels(y_true: torch.Tensor, y_pred: torch.Tensor, num_classes
     cm = torch.bincount(idx, minlength=num_classes * num_classes).view(num_classes, num_classes).to(torch.float64)
 
     tp = torch.diag(cm)
-    support = cm.sum(dim=1)       # row sums (true counts)
-    pred_count = cm.sum(dim=0)    # col sums (pred counts)
+    support = cm.sum(dim=1)       # true count per class (row sum)
+    pred_count = cm.sum(dim=0)    # predicted count per class (col sum)
 
     fp = pred_count - tp
     fn = support - tp
@@ -102,10 +108,15 @@ def macro_f1_from_labels(y_true: torch.Tensor, y_pred: torch.Tensor, num_classes
     f1 = 2.0 * precision * recall / (precision + recall + eps)
 
     present = support > 0
-    if not torch.any(present):
-        return 0.0
+    macro_f1 = f1[present].mean().item() if torch.any(present) else 0.0
 
-    return f1[present].mean().item()
+    return {
+        "macro_f1": macro_f1,
+        "precision_per_class": precision.cpu().numpy().tolist(),
+        "recall_per_class": recall.cpu().numpy().tolist(),
+        "f1_per_class": f1.cpu().numpy().tolist(),
+        "support_per_class": support.cpu().numpy().tolist(),
+    }
 
 
 # -------------------------
@@ -174,7 +185,7 @@ def evaluate(model, dataloader, dev, cfg, desc="Eval"):
 
     total = 0
 
-    # NEW: accumulate labels for macro F1
+    # accumulate labels for macro + per-class F1
     y_true_all = []
     y_pred_all = []
     num_classes = None
@@ -204,14 +215,14 @@ def evaluate(model, dataloader, dev, cfg, desc="Eval"):
             reduction="mean",
         )
 
-        ts_idx = conf_logits.argmax(dim=-1)  # predicted timestamp (used for loss_cls)
+        ts_idx = conf_logits.argmax(dim=-1)  # predicted timestamp
         B = conf_logits.size(0)
 
         cls_logits_btC = cls_logits.permute(0, 2, 1)  # [B, T, C]
         idx = torch.arange(B, device=dev)
 
-        sel_logits = cls_logits_btC[idx, ts_idx]           # [B, C]
-        sel_targets = batch["cls_vec"][idx, ts_idx].long() # [B]
+        sel_logits = cls_logits_btC[idx, ts_idx]            # [B, C]
+        sel_targets = batch["cls_vec"][idx, ts_idx].long()  # [B]
 
         loss_cls = torch.nn.functional.cross_entropy(sel_logits, sel_targets)
         loss = loss_conf + loss_cls
@@ -239,11 +250,14 @@ def evaluate(model, dataloader, dev, cfg, desc="Eval"):
         total_dt_abs_ms += mean_abs_dt_ms.item() * B
         total_dt_signed_ms += mean_signed_dt_ms.item() * B
 
-        # NEW: label collection for macro F1
-        gt_ts = batch["conf_vec"].argmax(dim=-1)                 # [B]
-        gt_lbl = batch["cls_vec"][idx, gt_ts].long()             # [B]
-        pred_ts = conf_logits.argmax(dim=-1)                     # [B]
-        pred_lbl = cls_logits_btC[idx, pred_ts].argmax(dim=-1)   # [B]
+        # labels for F1:
+        #   GT label at GT timestamp
+        gt_ts = batch["conf_vec"].argmax(dim=-1)
+        gt_lbl = batch["cls_vec"][idx, gt_ts].long()
+
+        #   Pred label at predicted timestamp
+        pred_ts = conf_logits.argmax(dim=-1)
+        pred_lbl = cls_logits_btC[idx, pred_ts].argmax(dim=-1).long()
 
         y_true_all.append(gt_lbl.detach().cpu())
         y_pred_all.append(pred_lbl.detach().cpu())
@@ -255,7 +269,8 @@ def evaluate(model, dataloader, dev, cfg, desc="Eval"):
 
     y_true = torch.cat(y_true_all, dim=0) if y_true_all else torch.empty(0, dtype=torch.int64)
     y_pred = torch.cat(y_pred_all, dim=0) if y_pred_all else torch.empty(0, dtype=torch.int64)
-    macro_f1 = macro_f1_from_labels(y_true, y_pred, num_classes=num_classes or 0)
+
+    f1_stats = f1_stats_from_labels(y_true, y_pred, num_classes=num_classes or 0)
 
     return {
         "avg_loss": total_loss / total,
@@ -263,7 +278,7 @@ def evaluate(model, dataloader, dev, cfg, desc="Eval"):
         "avg_loss_cls": total_loss_cls / total,
         "ts_accuracy": total_ts_acc / total,
         "accuracy": total_acc / total,
-        "macro_f1": macro_f1,  # NEW
+        **f1_stats,  # contains macro_f1 + per-class arrays
         "mean_abs_dt_steps": total_dt_abs_steps / total,
         "mean_signed_dt_steps": total_dt_signed_steps / total,
         "mean_abs_dt_ms": total_dt_abs_ms / total,
@@ -271,7 +286,10 @@ def evaluate(model, dataloader, dev, cfg, desc="Eval"):
     }
 
 
-def print_metrics(title: str, m: dict):
+def print_metrics(title: str, m: dict, top_k: int = 0):
+    """
+    top_k=0 prints all classes, otherwise prints top_k by support.
+    """
     print(
         f"{title} | "
         f"Loss: {m['avg_loss']:.4f} | "
@@ -279,12 +297,34 @@ def print_metrics(title: str, m: dict):
         f"LossCls: {m['avg_loss_cls']:.4f} | "
         f"TsAcc: {m['ts_accuracy']*100:.2f}% | "
         f"Acc: {m['accuracy']*100:.2f}% | "
-        f"MacroF1: {m['macro_f1']:.4f} | "  # NEW
+        f"MacroF1: {m['macro_f1']:.4f} | "
         f"DtAbsSteps: {m['mean_abs_dt_steps']:.2f} | "
         f"DtSignedSteps: {m['mean_signed_dt_steps']:.2f} | "
         f"DtAbsMs: {m['mean_abs_dt_ms']:.2f} | "
         f"DtSignedMs: {m['mean_signed_dt_ms']:.2f}"
     )
+
+    # ---- per-class print (NEW)
+    f1s = m.get("f1_per_class", None)
+    if f1s is None:
+        return
+
+    prec = m["precision_per_class"]
+    rec = m["recall_per_class"]
+    sup = m["support_per_class"]
+
+    # build rows: (class_idx, support, f1, prec, rec)
+    rows = [(i, float(sup[i]), float(f1s[i]), float(prec[i]), float(rec[i])) for i in range(len(f1s))]
+    # sort by support desc
+    rows.sort(key=lambda x: x[1], reverse=True)
+    if top_k and top_k > 0:
+        rows = rows[:top_k]
+
+    print("Per-class metrics (sorted by support):")
+    print("  cls | support |   F1   |   P    |   R")
+    print("  ----+---------+--------+--------+--------")
+    for i, s, f1, p, r in rows:
+        print(f"  {i:3d} | {s:7.0f} | {f1:6.4f} | {p:6.4f} | {r:6.4f}")
 
 
 def main():
@@ -297,6 +337,11 @@ def main():
     parser.add_argument("--num_workers", type=int, default=8)
     parser.add_argument("--pin_memory", action="store_true")
     parser.add_argument("--seed", type=int, default=42)
+
+    # NEW: optionally limit per-class printout
+    parser.add_argument("--per_class_topk", type=int, default=0,
+                        help="If >0, print only top-K classes by support in per-class table (default=0 prints all).")
+
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -305,7 +350,7 @@ def main():
     if not run_dir.exists():
         raise FileNotFoundError(f"run_dir not found: {run_dir}")
 
-    # ---- Load config from the selected run folder (no build_config, no overrides)
+    # ---- Load config
     cfg_path = run_dir / "config.yaml"
     if not cfg_path.exists():
         raise FileNotFoundError(f"Missing config.yaml in: {run_dir}")
@@ -352,22 +397,22 @@ def main():
     print(f"Device: {device}")
     print(f"Params | total: {total_params:,} | trainable: {trainable_params:,}")
 
-    # ---- Checkpoint selection
+    # ---- Load float checkpoint
     print(f"Loading checkpoint: {run_dir / 'checkpoints' / 'best_model.pth'}")
     state = torch.load(run_dir / "checkpoints" / "best_model.pth", map_location=device)
     model.load_state_dict(state, strict=True)
 
-    # ---- Evaluate
     metrics = evaluate(model, dl, device, cfg, desc=f"Eval ({args.split})")
-    print_metrics(f"RESULT ({args.split})", metrics)
+    print_metrics(f"RESULT ({args.split})", metrics, top_k=args.per_class_topk)
 
+    # ---- Load quant checkpoint
     print(f"Loading checkpoint: {run_dir / 'checkpoints' / 'best_model_calibration.pth'}")
     state = torch.load(run_dir / "checkpoints" / "best_model_calibration.pth", map_location=device)
     model.load_state_dict(state, strict=True)
 
     model.quantize()
     metrics = evaluate(model, dl, device, cfg, desc=f"Eval ({args.split})")
-    print_metrics(f"RESULT QUANT ({args.split})", metrics)
+    print_metrics(f"RESULT QUANT ({args.split})", metrics, top_k=args.per_class_topk)
 
 
 if __name__ == "__main__":
