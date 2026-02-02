@@ -12,7 +12,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-import wandb  # ✅ NEW
+import wandb
 
 from dataset.nas import SpikingDS
 from configs.build_config import build_config
@@ -78,8 +78,7 @@ torch.backends.cudnn.benchmark = False
 # -------------------------------------------------
 # 2. Files & split
 # -------------------------------------------------
-# dataset_root = Path.home() / "Datasets" / "NAS_GSC" / "dataset_aedat_w_delays_whole"
-dataset_root = Path("/net/storage/pr3/plgrid/plgg_dvs_phd/Audio/dataset_aedat_w_delays_whole")
+dataset_root = Path.home() / "Datasets" / "NAS_GSC" / "dataset_aedat_w_delays_whole"
 files = glob.glob(str(dataset_root / "*" / "*"))
 
 # Filter out anything that is not a file (defensive)

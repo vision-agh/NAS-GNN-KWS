@@ -137,7 +137,6 @@ torch.backends.cudnn.benchmark = False
 # -------------------------------------------------
 # 2. Files & split
 # -------------------------------------------------
-# dataset_root = Path.home() / "Datasets" / "NAS_GSC" / "dataset_aedat_w_delays_whole"
 dataset_root = Path("/net/storage/pr3/plgrid/plgg_dvs_phd/Audio/dataset_aedat_w_delays_whole")
 files = glob.glob(str(dataset_root / "*" / "*"))
 

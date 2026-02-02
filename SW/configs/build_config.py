@@ -1,13 +1,20 @@
 from omegaconf import OmegaConf
 
 
-def generate_thresholds(num_channels):
-    return [32] * num_channels  # replace with real logic
+def generate_constant_thresholds(num_channels, value=32):
+    return [value] * num_channels
 
-def generate_exponential_thresholds(num_channels, start=64, end=32):
+def generate_linear_thresholds(num_channels, start=64, end=32):
     thresholds = []
     for i in range(num_channels):
-        t = start * ((end / start) ** (i / (num_channels - 1)))
+        t = start + (end - start) * (i / (num_channels - 1)) if num_channels > 1 else start
+        thresholds.append(int(round(t)))
+    return thresholds
+
+def generate_exponential_thresholds(num_channels, start=64, end=32, sharpness=1.0):
+    thresholds = []
+    for i in range(num_channels):
+        t = start * ((end / start) ** (i / (num_channels - 1)) ** sharpness)
         thresholds.append(int(round(t)))
     return thresholds
 
@@ -32,10 +39,26 @@ def build_config(
         override_cfg = OmegaConf.from_dotlist(overrides)
         cfg = OmegaConf.merge(cfg, override_cfg)
 
-    # Recompute thresholds AFTER overrides (important!)
-    thresholds = generate_exponential_thresholds(
-        cfg.dataset.num_channels * (2 if cfg.dataset.polarity else 1)
-    )
+    total_num_channels = cfg.dataset.num_channels * (2 if cfg.dataset.polarity else 1)
+    start_threshold = cfg.dataset.get("start_threshold", 64)
+    end_threshold = cfg.dataset.get("end_threshold", 32)
+    sharpness = cfg.dataset.get("sharpness", 1.0)
+
+    # Generate thresholds based on the specified method
+    method = cfg.dataset.get("threshold_method", "exponential")
+    if method == "constant":
+        thresholds = generate_constant_thresholds(total_num_channels, 
+                                                  value=start_threshold)
+    elif method == "linear":
+        thresholds = generate_linear_thresholds(total_num_channels, 
+                                                start=start_threshold, 
+                                                end=end_threshold)
+    else:  # default to exponential
+        thresholds = generate_exponential_thresholds(total_num_channels, 
+                                                     start=start_threshold, 
+                                                     end=end_threshold, 
+                                                     sharpness=sharpness)
+
     cfg.dataset.thresholds = thresholds
 
     return cfg
