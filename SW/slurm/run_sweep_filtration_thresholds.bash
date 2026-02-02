@@ -9,7 +9,7 @@
 #SBATCH --partition=plgrid-gpu-gh200
 
 # Use job arrays:
-#SBATCH --array=0-3
+#SBATCH --array=0-13
 
 #SBATCH --output=outputs/%x-%A_%a.out
 #SBATCH --error=outputs/%x-%A_%a.err
