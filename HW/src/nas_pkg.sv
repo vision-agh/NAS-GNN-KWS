@@ -37,6 +37,7 @@ package nas_pkg;
 
     typedef struct packed {
       logic [T_DIFF_WIDTH-1 : 0] dt;
+      logic [4 : 0]              df;
       logic                      is_connected;
     } edge_type;
 

@@ -16,6 +16,7 @@ module graph_gen_ut;
     logic is_valid;
     event_type out_event;
     edge_type [MAX_EDGES-1:0] out_edges;
+    logic [$clog2(MAX_EDGES) :0] edge_cnt;
     logic empty;
     logic [PRECISION_GEN-1:0] t_feature;
     logic [PRECISION_GEN-1:0] f_feature;
@@ -116,7 +117,8 @@ module graph_gen_ut;
         .out_event(out_event),
         .out_edges(out_edges),
         .t_feature(t_feature),
-        .f_feature(f_feature)
+        .f_feature(f_feature),
+        .edge_cnt(edge_cnt)
     );
 
 endmodule
