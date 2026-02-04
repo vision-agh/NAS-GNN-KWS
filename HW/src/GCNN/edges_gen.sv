@@ -12,25 +12,30 @@ module edges_gen #(
     input event_type                          in_event,
 
     output event_type                         out_event,
-    output edge_type  [MAX_EDGES-1:0]         out_edges
+    output edge_type  [MAX_EDGES-1:0]         out_edges,
+    output logic [$clog2(MAX_EDGES) :0]       edge_cnt
 );
-    
+
     initial begin
         out_event <= '{default:0};
         out_edges <= '{default:0};
     end
 
-    logic [$clog2(F_RADIUS):0] counter, counter_reg;
-    event_type in_event_reg; // fifo output
-
     localparam IDLE = 2'd0;
     localparam GGEN = 2'd1;
-    logic state = IDLE;
+    logic state, state_reg = IDLE;
 
     // Memory interface signals
     logic [AWIDTH-1:0] addra, addrb;
-    logic [DWIDTH-1:0] dinb, douta, doutb;
-    logic ena, wea, web, enb;
+    logic [DWIDTH-1:0] din, dout;
+    logic en, we;
+
+    // Helper signals
+    logic condition, condition_reg;
+    logic [$clog2(MAX_EDGES) : 0] ptr = 0;
+    edge_type [MAX_EDGES-1:0] edges_reg;
+    logic [$clog2(MAX_EDGES):0] counter, counter_reg;
+    event_type in_event_reg; // fifo output
 
     // Context memory instantiation
     memory #(
@@ -39,37 +44,29 @@ module edges_gen #(
         .RAM_TYPE ( "block" )
     ) gen_memory (
         .clk      ( clk   ),
-        .mem_ena  ( ena   ),    // READ only on PORTA
-        .wea      ( wea   ),
+        .mem_ena  ( en    ),    // READ only on PORTA
+        .wea      ( '0    ),
         .addra    ( addra ),
         .dina     ( '0    ),
-        .dinb     ( dinb  ),
-        .douta    ( douta ),
-        .mem_enb  ( enb   ),    // Write on last 
-        .web      ( web   ),
+        .douta    ( dout  ),
+        .mem_enb  ( we    ),    // Write on last 
+        .web      ( we    ),
         .addrb    ( addrb ),
-        .doutb    ( doutb )
+        .dinb     ( din   ),
+        .doutb    ( )
     );
-    logic condition_a, condition_b, condition_a_reg, condition_b_reg;
-    edge_type [MAX_EDGES-1:0] edges_reg;
 
-    assign ena  = (counter <= F_RADIUS && condition_a && state==GGEN) ? 1'b1 : 1'b0;
-    assign enb  = (counter <= F_RADIUS && condition_b && state==GGEN) ? 1'b1 : 1'b0;
-    assign wea  = 0;
-    assign dinb[DWIDTH-1 : 1] = in_event_reg.t;
-    assign dinb[0] = 1'b1;
-    assign web  = (counter == F_RADIUS) && state==GGEN;
+    // [Read] Logic on counter (memory_in)
+    assign en  = (counter < MAX_EDGES) && condition && state==GGEN ? 1'b1 : 1'b0;
+    assign addra = (counter <= F_RADIUS) ? in_event.f + counter*SKIP_STEP : in_event.f - ((counter-F_RADIUS)*SKIP_STEP);
+    assign condition = (addra >= 0) && (addra < NUM_CHANNEL);
 
-    assign addra = in_event.f + counter*SKIP_STEP;
-    assign addrb = in_event.f - (F_RADIUS*SKIP_STEP) + (counter*SKIP_STEP);
-
-    assign condition_a = (addra >= 0) && (addra < NUM_CHANNEL);
-    assign condition_b = (addrb >= 0) && (addrb < NUM_CHANNEL);
-
-    logic [26-1 : 0] t_temp;
+    // [Write] Logic on counter (memory_in)
+    assign we  = (counter == MAX_EDGES-1) && state==GGEN;
+    assign din[DWIDTH-1 : 1] = in_event_reg.t;
+    assign din[0] = 1'b1;
+    assign addrb = in_event_reg.f;
     logic start;
-    logic [18-1 : 0] f_temp;
-    logic [$clog2(MAX_EDGES)-1 : 0] num_edges;
 
     // Counter and edge processing
     always @(posedge clk) begin
@@ -77,17 +74,20 @@ module edges_gen #(
             state <= IDLE;
             start <= '0;
             out_event.valid <= '0;
+            edge_cnt <= '0;
             counter <= F_RADIUS;
         end else begin
-            if (counter < F_RADIUS && state==GGEN) begin
+            if (counter < MAX_EDGES-1 && state==GGEN) begin
                 counter <= counter + 1;
             end
             if (in_event.valid) begin
                 counter <= '0;
+                ptr <= '0;
                 state <= GGEN;
                 in_event_reg <= in_event;
+                edge_cnt <= '0;
             end
-            if (counter_reg == F_RADIUS && counter == F_RADIUS && state == GGEN) begin
+            if (counter_reg == MAX_EDGES-1 && state_reg == GGEN) begin
                 state <= IDLE;
                 start <= '1;
             end
@@ -102,19 +102,19 @@ module edges_gen #(
                 end
             end
             counter_reg <= counter;
-            condition_a_reg <= condition_a;
-            condition_b_reg <= condition_b;
+            condition_reg <= condition;
+            state_reg <= state;
 
-            // Port A
-            edges_reg[counter_reg].dt            <= in_event_reg.t - douta[DWIDTH-1:1];
-            edges_reg[counter_reg].is_connected  <= douta[0] && condition_a_reg && (T_RADIUS_LOW <= (in_event_reg.t - douta[DWIDTH-1:1]))
-                                                                                && (T_RADIUS_HIGH >= (in_event_reg.t - douta[DWIDTH-1:1]));
-
-            // Port B (ON counter F_RADIUS we do write on B)
-            if (counter_reg != F_RADIUS) begin
-                edges_reg[F_RADIUS+1+counter_reg].dt            <= in_event_reg.t - doutb[DWIDTH-1:1];
-                edges_reg[F_RADIUS+1+counter_reg].is_connected  <= doutb[0] && condition_b_reg && (T_RADIUS_LOW <= (in_event_reg.t - doutb[DWIDTH-1:1]))
-                                                                                               && (T_RADIUS_HIGH >= (in_event_reg.t - doutb[DWIDTH-1:1]));
+            edges_reg[ptr].dt            <= in_event_reg.t - dout[DWIDTH-1:1];
+            edges_reg[ptr].df            <= counter_reg;
+            if (state == GGEN && dout[0] && condition_reg && (T_RADIUS_LOW <= (in_event_reg.t - dout[DWIDTH-1:1]))
+                                         && (T_RADIUS_HIGH >= (in_event_reg.t - dout[DWIDTH-1:1]))) begin
+                edges_reg[ptr].is_connected <= 1'b1;
+                ptr <= ptr + 1; 
+                edge_cnt <= edge_cnt + 1;
+            end
+            else begin
+                edges_reg[ptr].is_connected <= 1'b0;
             end
         end
     end
