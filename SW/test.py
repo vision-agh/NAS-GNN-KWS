@@ -134,7 +134,7 @@ def _timestamp_accuracy(
     cls_logits: torch.Tensor,
     gt_keyword: torch.Tensor,
     gt_cls_idx: torch.Tensor,
-    tolerance: int = 3,
+    tolerance: int = 1,
 ):
     if gt_keyword.dim() != 2 or gt_cls_idx.dim() != 2:
         raise ValueError(
@@ -174,7 +174,8 @@ def evaluate(model, dataloader, dev, cfg, desc="Eval"):
     total_loss_cls = 0.0
     total_loss = 0.0
 
-    total_ts_acc = 0.0
+    total_ts_acc_1 = 0.0
+    total_ts_acc_3 = 0.0
     total_acc = 0.0
 
     total_dt_abs_steps = 0.0
@@ -227,8 +228,12 @@ def evaluate(model, dataloader, dev, cfg, desc="Eval"):
         loss_cls = torch.nn.functional.cross_entropy(sel_logits, sel_targets)
         loss = loss_conf + loss_cls
 
-        ts_acc, acc = _timestamp_accuracy(
-            conf_logits, cls_logits, batch["conf_vec"], batch["cls_vec"]
+        ts_acc_1, acc = _timestamp_accuracy(
+            conf_logits, cls_logits, batch["conf_vec"], batch["cls_vec"], tolerance=1
+        )
+
+        ts_acc_3, _ = _timestamp_accuracy(
+            conf_logits, cls_logits, batch["conf_vec"], batch["cls_vec"], tolerance=3
         )
 
         mean_abs_dt_steps, mean_signed_dt_steps = _timestamp_errors(
@@ -242,7 +247,8 @@ def evaluate(model, dataloader, dev, cfg, desc="Eval"):
         total_loss += loss.item() * B
         total_loss_conf += loss_conf.item() * B
         total_loss_cls += loss_cls.item() * B
-        total_ts_acc += ts_acc.item() * B
+        total_ts_acc_1 += ts_acc_1.item() * B
+        total_ts_acc_3 += ts_acc_3.item() * B
         total_acc += acc.item() * B
 
         total_dt_abs_steps += mean_abs_dt_steps.item() * B
@@ -276,7 +282,8 @@ def evaluate(model, dataloader, dev, cfg, desc="Eval"):
         "avg_loss": total_loss / total,
         "avg_loss_conf": total_loss_conf / total,
         "avg_loss_cls": total_loss_cls / total,
-        "ts_accuracy": total_ts_acc / total,
+        "ts_accuracy_1": total_ts_acc_1 / total,
+        "ts_accuracy_3": total_ts_acc_3 / total,
         "accuracy": total_acc / total,
         **f1_stats,  # contains macro_f1 + per-class arrays
         "mean_abs_dt_steps": total_dt_abs_steps / total,
@@ -295,7 +302,8 @@ def print_metrics(title: str, m: dict, top_k: int = 0):
         f"Loss: {m['avg_loss']:.4f} | "
         f"LossConf: {m['avg_loss_conf']:.4f} | "
         f"LossCls: {m['avg_loss_cls']:.4f} | "
-        f"TsAcc: {m['ts_accuracy']*100:.2f}% | "
+        f"TsAcc_1: {m['ts_accuracy_1']*100:.2f}% | "
+        f"TsAcc_3: {m['ts_accuracy_3']*100:.2f}% | "
         f"Acc: {m['accuracy']*100:.2f}% | "
         f"MacroF1: {m['macro_f1']:.4f} | "
         f"DtAbsSteps: {m['mean_abs_dt_steps']:.2f} | "
