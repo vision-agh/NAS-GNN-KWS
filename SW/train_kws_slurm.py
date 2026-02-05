@@ -416,7 +416,7 @@ def _timestamp_accuracy(
     pred_cls_btC = cls_logits.permute(0, 2, 1)
     idx = torch.arange(B, device=dev)
 
-    pred_lbl = pred_cls_btC[idx, gt_ts].argmax(dim=-1)
+    pred_lbl = pred_cls_btC[idx, pred_ts].argmax(dim=-1)
     gt_lbl = gt_cls_idx[idx, gt_ts].long()
 
     time_ok = (pred_ts - gt_ts).abs() <= tolerance
@@ -437,7 +437,8 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
     total_loss_cls = 0.0
     total_loss = 0.0
 
-    total_ts_acc = 0.0
+    total_ts_acc_1 = 0.0
+    total_ts_acc_3 = 0.0
     total_acc = 0.0
 
     total_dt_abs_steps = 0.0
@@ -485,8 +486,12 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
 
         loss = loss_conf + loss_cls
 
-        ts_acc, acc = _timestamp_accuracy(
-            conf_logits, cls_logits, batch["conf_vec"], batch["cls_vec"]
+        ts_acc_1, acc = _timestamp_accuracy(
+            conf_logits, cls_logits, batch["conf_vec"], batch["cls_vec"], tolerance=1
+        )
+
+        ts_acc_3, _ = _timestamp_accuracy(
+            conf_logits, cls_logits, batch["conf_vec"], batch["cls_vec"], tolerance=3
         )
 
         mean_abs_dt_steps, mean_signed_dt_steps = _timestamp_errors(
@@ -505,7 +510,8 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
         total_loss += loss.item() * B
         total_loss_conf += loss_conf.item() * B
         total_loss_cls += loss_cls.item() * B
-        total_ts_acc += ts_acc.item() * B
+        total_ts_acc_1 += ts_acc_1.item() * B
+        total_ts_acc_3 += ts_acc_3.item() * B
         total_acc += acc.item() * B
 
         total_dt_abs_steps += mean_abs_dt_steps.item() * B
@@ -522,7 +528,8 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
         "avg_loss": total_loss / total,
         "avg_loss_conf": total_loss_conf / total,
         "avg_loss_cls": total_loss_cls / total,
-        "ts_accuracy": total_ts_acc / total,
+        "ts_accuracy_1": total_ts_acc_1 / total,
+        "ts_accuracy_3": total_ts_acc_3 / total,
         "accuracy": total_acc / total,
         "mean_abs_dt_steps": total_dt_abs_steps / total,
         "mean_signed_dt_steps": total_dt_signed_steps / total,
@@ -557,7 +564,8 @@ for epoch in range(EPOCHS):
         f"Train Loss: {train_metrics['avg_loss']:.4f} | "
         f"Train Loss Conf: {train_metrics['avg_loss_conf']:.4f} | "
         f"Train Loss Cls: {train_metrics['avg_loss_cls']:.4f} | "
-        f"Train Ts Acc: {train_metrics['ts_accuracy']*100:.2f}% | "
+        f"Train Ts Acc 1: {train_metrics['ts_accuracy_1']*100:.2f}% | "
+        f"Train Ts Acc 3: {train_metrics['ts_accuracy_3']*100:.2f}% | "
         f"Train Acc: {train_metrics['accuracy']*100:.2f}% | "
         f"Train Dt Abs Steps: {train_metrics['mean_abs_dt_steps']:.2f} | "
         f"Train Dt Signed Steps: {train_metrics['mean_signed_dt_steps']:.2f} | "
@@ -576,7 +584,8 @@ for epoch in range(EPOCHS):
         f"Val Loss: {val_metrics['avg_loss']:.4f} | "
         f"Val Loss Conf: {val_metrics['avg_loss_conf']:.4f} | "
         f"Val Loss Cls: {val_metrics['avg_loss_cls']:.4f} | "
-        f"Val Ts Acc: {val_metrics['ts_accuracy']*100:.2f}% | "
+        f"Val Ts Acc 1: {val_metrics['ts_accuracy_1']*100:.2f}% | "
+        f"Val Ts Acc 3: {val_metrics['ts_accuracy_3']*100:.2f}% | "
         f"Val Acc: {val_metrics['accuracy']*100:.2f}% | "
         f"Val Dt Abs Steps: {val_metrics['mean_abs_dt_steps']:.2f} | "
         f"Val Dt Signed Steps: {val_metrics['mean_signed_dt_steps']:.2f} | "
@@ -631,7 +640,8 @@ print(
     f"Test Loss: {test_metrics['avg_loss']:.4f} | "
     f"Test Loss Conf: {test_metrics['avg_loss_conf']:.4f} | "
     f"Test Loss Cls: {test_metrics['avg_loss_cls']:.4f} | "
-    f"Test Ts Acc: {test_metrics['ts_accuracy']*100:.2f}% | "
+    f"Test Ts Acc 1: {test_metrics['ts_accuracy_1']*100:.2f}% | "
+    f"Test Ts Acc 3: {test_metrics['ts_accuracy_3']*100:.2f}% | "
     f"Test Acc: {test_metrics['accuracy']*100:.2f}% | "
     f"Test Dt Abs Steps: {test_metrics['mean_abs_dt_steps']:.2f} | "
     f"Test Dt Signed Steps: {test_metrics['mean_signed_dt_steps']:.2f} | "
@@ -664,7 +674,8 @@ for epoch in range(EPOCHS_CALIBRATION):
         f"Train Loss: {train_metrics['avg_loss']:.4f} | "
         f"Train Loss Conf: {train_metrics['avg_loss_conf']:.4f} | "
         f"Train Loss Cls: {train_metrics['avg_loss_cls']:.4f} | "
-        f"Train Ts Acc: {train_metrics['ts_accuracy']*100:.2f}% | "
+        f"Train Ts Acc 1: {train_metrics['ts_accuracy_1']*100:.2f}% | "
+        f"Train Ts Acc 3: {train_metrics['ts_accuracy_3']*100:.2f}% | "
         f"Train Acc: {train_metrics['accuracy']*100:.2f}% | "
         f"Train Dt Abs Steps: {train_metrics['mean_abs_dt_steps']:.2f} | "
         f"Train Dt Signed Steps: {train_metrics['mean_signed_dt_steps']:.2f} | "
@@ -683,7 +694,8 @@ for epoch in range(EPOCHS_CALIBRATION):
         f"Val Loss: {val_metrics['avg_loss']:.4f} | "
         f"Val Loss Conf: {val_metrics['avg_loss_conf']:.4f} | "
         f"Val Loss Cls: {val_metrics['avg_loss_cls']:.4f} | "
-        f"Val Ts Acc: {val_metrics['ts_accuracy']*100:.2f}% | "
+        f"Val Ts Acc 1: {val_metrics['ts_accuracy_1']*100:.2f}% | "
+        f"Val Ts Acc 3: {val_metrics['ts_accuracy_3']*100:.2f}% | "
         f"Val Acc: {val_metrics['accuracy']*100:.2f}% | "
         f"Val Dt Abs Steps: {val_metrics['mean_abs_dt_steps']:.2f} | "
         f"Val Dt Signed Steps: {val_metrics['mean_signed_dt_steps']:.2f} | "
@@ -736,7 +748,8 @@ print(
     f"Test Loss: {test_metrics['avg_loss']:.4f} | "
     f"Test Loss Conf: {test_metrics['avg_loss_conf']:.4f} | "
     f"Test Loss Cls: {test_metrics['avg_loss_cls']:.4f} | "
-    f"Test Ts Acc: {test_metrics['ts_accuracy']*100:.2f}% | "
+    f"Test Ts Acc 1: {test_metrics['ts_accuracy_1']*100:.2f}% | "
+    f"Test Ts Acc 3: {test_metrics['ts_accuracy_3']*100:.2f}% | "
     f"Test Acc: {test_metrics['accuracy']*100:.2f}% | "
     f"Test Dt Abs Steps: {test_metrics['mean_abs_dt_steps']:.2f} | "
     f"Test Dt Signed Steps: {test_metrics['mean_signed_dt_steps']:.2f} | "
@@ -762,7 +775,8 @@ print(
     f"Test Loss: {test_metrics['avg_loss']:.4f} | "
     f"Test Loss Conf: {test_metrics['avg_loss_conf']:.4f} | "
     f"Test Loss Cls: {test_metrics['avg_loss_cls']:.4f} | "
-    f"Test Ts Acc: {test_metrics['ts_accuracy']*100:.2f}% | "
+    f"Test Ts Acc 1: {test_metrics['ts_accuracy_1']*100:.2f}% | "
+    f"Test Ts Acc 3: {test_metrics['ts_accuracy_3']*100:.2f}% | "
     f"Test Acc: {test_metrics['accuracy']*100:.2f}% | "
     f"Test Dt Abs Steps: {test_metrics['mean_abs_dt_steps']:.2f} | "
     f"Test Dt Signed Steps: {test_metrics['mean_signed_dt_steps']:.2f} | "
