@@ -23,7 +23,7 @@ module edges_gen #(
 
     localparam IDLE = 2'd0;
     localparam GGEN = 2'd1;
-    logic state, state_reg = IDLE;
+    logic [1:0] state, state_reg = IDLE;
 
     // Memory interface signals
     logic [AWIDTH-1:0] addra, addrb;
@@ -100,6 +100,7 @@ module edges_gen #(
                 else begin
                     out_event.valid <= '0;
                 end
+                edges_reg <= '{default:0};
             end
             counter_reg <= counter;
             condition_reg <= condition;
@@ -107,7 +108,7 @@ module edges_gen #(
 
             edges_reg[ptr].dt            <= in_event_reg.t - dout[DWIDTH-1:1];
             edges_reg[ptr].df            <= counter_reg;
-            if (state == GGEN && dout[0] && condition_reg && (T_RADIUS_LOW <= (in_event_reg.t - dout[DWIDTH-1:1]))
+            if (state_reg == GGEN && dout[0] && condition_reg && (T_RADIUS_LOW <= (in_event_reg.t - dout[DWIDTH-1:1]))
                                          && (T_RADIUS_HIGH >= (in_event_reg.t - dout[DWIDTH-1:1]))) begin
                 edges_reg[ptr].is_connected <= 1'b1;
                 ptr <= ptr + 1; 
