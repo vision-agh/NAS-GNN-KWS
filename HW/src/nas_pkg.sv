@@ -46,7 +46,7 @@ package nas_pkg;
     parameter [63:0] GEN_MULTIPLIER_F = 64'd4180860697; // (add 2^32)
     parameter GEN_ZERO_POINT = 125;
 
-    parameter THROUGHPUT = 20; // for FIFO read
+    parameter THROUGHPUT = 400; // for FIFO read
     // LIF parameters
     parameter DECAY_SHIFT = 8;
     parameter WEIGHT = 32;
