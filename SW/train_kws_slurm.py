@@ -135,9 +135,31 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
 # -------------------------------------------------
+# 3. Dataset
+# -------------------------------------------------
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset_cfg", type=str, default="configs/dataset.yaml")
+parser.add_argument("--nas_cfg", type=str, default="configs/nas.yaml")
+parser.add_argument("--model_cfg", type=str, default="configs/kws.yaml")
+parser.add_argument("--dataset_dir", type=str, default="/net/storage/pr3/plgrid/plgg_dvs_phd/Audio/dataset_aedat_w_delays")
+
+# everything unknown becomes override key=value
+args, overrides = parser.parse_known_args()
+
+cfg = build_config(
+    dataset_cfg_path=args.dataset_cfg,
+    nas_cfg_path=args.nas_cfg,
+    model_cfg_path=args.model_cfg,
+    overrides=overrides,
+)
+
+print("FINAL CFG:\n", OmegaConf.to_yaml(cfg))
+
+
+# -------------------------------------------------
 # 2. Files & split
 # -------------------------------------------------
-dataset_root = Path("/net/storage/pr3/plgrid/plgg_dvs_phd/Audio/dataset_aedat_w_delays_whole")
+dataset_root = Path(args.dataset_dir)
 files = glob.glob(str(dataset_root / "*" / "*"))
 
 # Filter out anything that is not a file (defensive)
@@ -181,26 +203,6 @@ print(
     f"Validation files: {len(val_files)}"
 )
 
-
-# -------------------------------------------------
-# 3. Dataset
-# -------------------------------------------------
-parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_cfg", type=str, default="configs/dataset.yaml")
-parser.add_argument("--nas_cfg", type=str, default="configs/nas.yaml")
-parser.add_argument("--model_cfg", type=str, default="configs/kws.yaml")
-
-# everything unknown becomes override key=value
-args, overrides = parser.parse_known_args()
-
-cfg = build_config(
-    dataset_cfg_path=args.dataset_cfg,
-    nas_cfg_path=args.nas_cfg,
-    model_cfg_path=args.model_cfg,
-    overrides=overrides,
-)
-
-print("FINAL CFG:\n", OmegaConf.to_yaml(cfg))
 
 # -------------------------------------------------
 # ✅ Create ONE unified run directory
