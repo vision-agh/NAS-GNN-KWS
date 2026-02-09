@@ -7,13 +7,13 @@ module gcnn_ut;
     parameter MAX_X_COORD = 120;
     parameter MAX_Y_COORD = 100;
     parameter INPUT_PATH = "/home/pwz/Repo/SW/NAS-GNN-KWS/SW/example_result/kws/20251223_113159/debug_outputs/filtered_events.txt";
-    parameter OUTPUT_PATH = "/home/pwz/Repo/SW/CONV4.txt";
+    parameter OUTPUT_PATH = "/home/pwz/Repo/SW/CONV2.txt";
     parameter NS_PER_CLK = 5; // 250MHz is 4 clk every ns
     parameter TIME_WINDOW = 1000000; // We test only single time window
 
     logic [T_WIDTH-1:0] t;
     logic [F_WIDTH-1:0] f;
-    logic is_valid;
+    logic is_valid = 0;
 
     event_type                   event_test;
     edge_type [MAX_EDGES-1:0]    edges_test;
@@ -72,20 +72,28 @@ module gcnn_ut;
         end
     end
 
+    logic is_ready;
+
     always @(posedge clk) begin
         if (!rst) begin
             
             // Caluclate simulation time
             current_time_ns = current_time_ns + NS_PER_CLK;
             
+//            // Put values on input whenever the timestamp is smaller than simultation time
+//            if (t_feature_reg * 1000 < current_time_ns && t_feature_reg <= TIME_WINDOW) begin
+//                is_valid <= 1;
+//                t_feature_reg   <= t_coords.pop_front();
+//                f_feature_reg   <= f_coords.pop_front();
+//            end
+//            else begin
+//                 is_valid <= 0;
+//            end
+            is_valid <= '1;
             // Put values on input whenever the timestamp is smaller than simultation time
-            if (t_feature_reg * 1000 < current_time_ns && t_feature_reg <= TIME_WINDOW) begin
-                is_valid <= 1;
+            if (is_ready && is_valid) begin
                 t_feature_reg   <= t_coords.pop_front();
                 f_feature_reg   <= f_coords.pop_front();
-            end
-            else begin
-                 is_valid <= 0;
             end
 
             t <= t_feature_reg;
@@ -113,6 +121,7 @@ module gcnn_ut;
         .t(t),
         .f(f),
         .is_valid(is_valid),
+        .is_ready(is_ready),
         .event_test(event_test),
         .edges_test(edges_test),
         .features_test(features_test)
