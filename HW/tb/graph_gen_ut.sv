@@ -101,7 +101,7 @@ module graph_gen_ut;
             end
 
             // Finish simulation after 50.1 ms
-            if (current_time_ns > 40000000) begin
+            if (current_time_ns > 80000000) begin
                 $fclose(file_out);
                 $finish;
             end
