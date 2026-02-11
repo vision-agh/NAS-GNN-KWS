@@ -108,7 +108,7 @@ module gcnn_ut;
             end
 
             // Finish simulation after 50.1 ms
-            if (current_time_ns > 300000000) begin
+            if (current_time_ns > 500000) begin
                 $fclose(file_out);
                 $finish;
             end

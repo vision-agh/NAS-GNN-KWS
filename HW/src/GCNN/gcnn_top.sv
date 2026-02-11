@@ -19,9 +19,10 @@ module gcnn_top #(
     output logic [PRECISION_GEN-1:0]    features_test [OUTPUT_DIM_1-1 : 0]
 );
 
-    localparam string MEMORY_DIR_PATH = "/home/pwz/Repo/NAS-GCN-KWS/HW/mem/";
+    localparam string MEMORY_DIR_PATH = "/home/pwz/Repo/NEW_IMPL/NAS-GNN-KWS/HW/mem/";
     localparam string INIT_PATH_CONV1 = {MEMORY_DIR_PATH, "conv1.mem"};
-    localparam string INIT_PATH_CONV2 = {MEMORY_DIR_PATH, "conv2.mem"};
+    localparam string INIT_PATH_CONV2_W = {MEMORY_DIR_PATH, "conv2_w.mem"};
+    localparam string INIT_PATH_CONV2_B = {MEMORY_DIR_PATH, "conv2_b.mem"};
     localparam string INIT_PATH_CONV3 = {MEMORY_DIR_PATH, "conv3.mem"};
     localparam string INIT_PATH_CONV4 = {MEMORY_DIR_PATH, "conv4.mem"};
 
@@ -36,8 +37,8 @@ module gcnn_top #(
     localparam CONV2_MULTIPLIER_OUT = 68070312;
     localparam CONV2_ZERO_POINT_IN = 156;
     localparam CONV2_ZERO_POINT_OUT = 161;
-    localparam CONV2_ZERO_POINT_WEIGHT = 107;
-    localparam logic [7:0] CONV2_SCALE_IN [21:0] = {156,154,152,149,147,145,143,141,138,136,134,178,176,174,171,169,167,165,163,160,158,156};
+    localparam CONV2_ZERO_POINT_WEIGHT = 107;      
+    localparam logic [7:0] CONV2_SCALE_IN [20:0] = {134,136,138,141,143,145,147,149,152,154,178,176,174,171,169,167,165,163,160,158,156};
 
     localparam CONV3_MULTIPLIER_DIFF_T = 10573274;
     localparam CONV3_MULTIPLIER_OUT = 67359312;
@@ -139,7 +140,7 @@ module gcnn_top #(
         .out_ready    ( conv2_ready        )
     );
 
-      convolution_reversed #(
+      convolution_sparse #(
           .PRECISION_IN      ( PRECISION_CONV1         ),
           .PRECISION_OUT     ( PRECISION_CONV2         ),
           .INPUT_DIM         ( OUTPUT_DIM_1            ),
@@ -150,7 +151,8 @@ module gcnn_top #(
           .MULTIPLIER_OUT    ( CONV2_MULTIPLIER_OUT    ),
           .ZERO_POINT_WEIGHT ( CONV2_ZERO_POINT_WEIGHT ),
           .SCALE_IN          ( CONV2_SCALE_IN          ),
-          .INIT_PATH         ( INIT_PATH_CONV2         )
+          .INIT_PATH_W       ( INIT_PATH_CONV2_W       ),
+          .INIT_PATH_B       ( INIT_PATH_CONV2_B       )
       ) u_conv2 (
           .clk          ( clk               ),
           .reset        ( reset             ),
