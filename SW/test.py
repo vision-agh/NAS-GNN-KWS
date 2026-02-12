@@ -370,7 +370,7 @@ def main():
     print(OmegaConf.to_yaml(cfg))
 
     # ---- dataset root
-    dataset_root = Path.home() / "Datasets" / "NAS_GSC" / "dataset_aedat_w_delays_parallel"
+    dataset_root = Path.home() / "Datasets" / "NAS_GSC" / "dataset_aedat_w_delays_whole"
     train_files, val_files, test_files = build_splits(dataset_root)
     print(f"Split sizes | Train: {len(train_files)} | Val: {len(val_files)} | Test: {len(test_files)}")
 

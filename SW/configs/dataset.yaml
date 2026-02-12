@@ -19,7 +19,7 @@ div_factor: 8                   # Division factor (2 ^ div_factor) for time norm
 weight: 32                      # Weight for potential accumulation
 thresholds: None                # List of thresholds for event filtration, if None - automatic thresholding
 threshold_method: exponential   # Method for threshold generation: linear, exponential, constant
-start_threshold: 64             # Start threshold for automatic thresholding (used also in constant method)
+start_threshold: 128             # Start threshold for automatic thresholding (used also in constant method)
 end_threshold: 32               # End threshold for automatic thresholding (used in linear and exponential methods)
 sharpness: 1.0                  # Sharpness for exponential thresholding
 

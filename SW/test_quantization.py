@@ -9,6 +9,8 @@ from pathlib import Path
 from configs.build_config import build_config
 from models.networks.kws import KWS
 
+from omegaconf import OmegaConf
+
 from utils.generate_outputs import gen_input_events, gen_graph_out, conv_gen_out, conv_first_gen_out, vector_out
 
 def move_to_device(batch, dev):
@@ -20,14 +22,17 @@ def move_to_device(batch, dev):
 
 # Prepare dataset
 files = glob.glob(
-    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat/backward/0a2b400e_nohash_0.wav.aedat"
+    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_whole/backward/0a2b400e_nohash_0.wav.aedat"
 )
-cfg = build_config(model_cfg_path="configs/kws.yaml")
+# cfg = build_config(model_cfg_path="configs/kws.yaml")
+
+cfg = OmegaConf.load('runs/kws/20260204_231115_job12165103_task2_x1002c4s5b1n0/config.yaml')
+OmegaConf.resolve(cfg)
 ds = SpikingDS(files, cfg)
 
 # Prepare model
 model = KWS(cfg).to('cuda')
-ckpt = torch.load('example_result/kws/20251225_002857_normalised/best_model_calibration.pth')
+ckpt = torch.load('runs/kws/20260204_231115_job12165103_task2_x1002c4s5b1n0/checkpoints/best_model_calibration.pth')
 model.load_state_dict(ckpt)
 model.eval()
 
@@ -35,8 +40,8 @@ model.eval()
 model.quantize()
 
 # Create output directory for debug outputs
-path_debug = 'example_result/kws/20251225_002857_normalised/debug_outputs/'
-path_parameters = 'example_result/kws/20251225_002857_normalised/parameters/'
+path_debug = 'runs/kws/20260204_231115_job12165103_task2_x1002c4s5b1n0/debug_outputs/'
+path_parameters = 'runs/kws/20260204_231115_job12165103_task2_x1002c4s5b1n0/parameters/'
 os.makedirs(path_debug, exist_ok=True)
 os.makedirs(path_parameters, exist_ok=True)
 

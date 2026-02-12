@@ -10,8 +10,11 @@ from configs.build_config import build_config
 vis_edges = False
 
 files = glob.glob(
-    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_parallel/zero/*"
+    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_parallel/zero/facd97c0_nohash_0*"
 )
+
+    # f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_parallel/zero/5170b77f_nohash_2*"
+    # f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_whole/zero/5170b77f_nohash_2*"
 cfg = build_config()
 print(cfg)
 
@@ -32,9 +35,14 @@ for data in ds:
     print("File:", file)
     print("Start Time:", start_time)
     print("End Time:", end_time)
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(26, 6))
 
-    plt.scatter(pos[:, 0].numpy(), pos[:, 1].numpy(), s=3)
+    plt.scatter(pos[:, 0].numpy(), pos[:, 1].numpy() * 64, s=35, alpha=0.5, color='darkred', marker='.', linewidths=0)
+    plt.xlabel("Time (s)", fontsize=21)
+    plt.ylabel("Channel", fontsize=21)
+    # set fontsize of ticks
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
     edges = edge_index.cpu().numpy()
 
     if vis_edges == True:
@@ -44,8 +52,13 @@ for data in ds:
             if src == dst:
                 continue
 
-            ax.plot([t1, t2], [c1, c2], linewidth=0.4, alpha=0.2, color='red')
+            ax.plot([t1, t2], [c1, c2], linewidth=0.4, alpha=0.1, color='red')
     plt.show(block=False)
+    plt.tight_layout()
+    # save the plot with high resolution
+    plt.savefig(f"event_graph.png", dpi=600)
+    # close the plot to free up memory
+    plt.close()
     
     # Plot the smoothed histogram with active range
 
