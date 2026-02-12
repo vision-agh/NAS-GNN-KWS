@@ -60,8 +60,8 @@ for data in ds:
     data['batch'] = torch.zeros(data['x'].shape[0], dtype=torch.long)
     data = move_to_device(data, 'cuda')
 
-    gen_input_events(data['pos_original'], cfg, path_debug + 'input_events.txt')
-    gen_input_events(data['pos_filtered'], cfg, path_debug + 'filtered_events.txt')
+    gen_input_events(data['pos_original'], data['polarity_feature'], cfg, path_debug + 'input_events.txt')
+    gen_input_events(data['pos_filtered'], data['x'][:, -1], cfg, path_debug + 'filtered_events.txt')
     gen_graph_out(model.conv1.observer_input.quantize_tensor(data['x']), data['pos_filtered'], data['edge_index'], cfg, path_debug + 'graph_out.txt')
 
     with torch.no_grad():

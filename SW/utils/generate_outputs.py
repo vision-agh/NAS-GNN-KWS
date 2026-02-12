@@ -2,6 +2,7 @@ import torch
 import numpy as np
 
 def gen_input_events(events,
+                     polarity,
                 cfg,
                 name: str) -> dict:
     """
@@ -16,8 +17,9 @@ def gen_input_events(events,
     """
     with open(name, 'w') as f:
         events = events.detach().cpu().numpy()
-        for pos in events:
-            f.write(f"{int(pos[0])} {int(pos[1])}\n")
+        polarity = polarity.detach().cpu().numpy()
+        for pos, pol in zip(events, polarity):
+            f.write(f"{int(pos[0])} {int(pos[1])} {int(pol)}\n")
 
 
 def gen_graph_out(
