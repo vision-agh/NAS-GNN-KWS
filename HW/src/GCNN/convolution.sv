@@ -9,7 +9,7 @@ module convolution #(
     parameter int OUTPUT_DIM                 = 64,
     parameter int MULTIPLIER_DIFF_T          = 214742, //good
     parameter int ZERO_POINT_IN              = 0,  //good
-    parameter int ZERO_POINT_OUT             = 36533, //good
+    parameter int ZERO_POINT_OUT             = 154, //good
     parameter int MULTIPLIER_OUT             = 58670, //good
     parameter int ZERO_POINT_WEIGHT          = 30075,
     parameter string INIT_PATH               = "???",
@@ -19,6 +19,7 @@ module convolution #(
     input logic clk,
     input logic reset,
     input event_type                        in_event,
+    output logic                            in_ready,
     input edge_type  [MAX_EDGES-1:0]        in_edges,
     input logic [PRECISION_IN-1 :0]         in_features [INPUT_DIM-1 : 0],
     input logic      [$clog2(MAX_EDGES) :0] in_edge_cnt,
@@ -56,7 +57,7 @@ module convolution #(
     localparam SAVE = 2'd2;
     logic [1:0] state, state_MRR, state_RM, state_mul_in = IDLE;
     logic [$clog2(F_RADIUS):0]     iter_counter, iter_counter_MRR, iter_counter_RM, iter_counter_acc;
-    logic [$clog2(OUTPUT_DIM/2):0] outdim_counter, outdim_counter_mul_out, outdim_counter_compare, outdim_counter_acc;
+    logic [$clog2(OUTPUT_DIM):0] outdim_counter, outdim_counter_mul_out, outdim_counter_compare, outdim_counter_acc;
 
     delay_module #(
         .N        ( $clog2(F_RADIUS)+1 ),
@@ -68,8 +69,8 @@ module convolution #(
     );
 
     delay_module #(
-        .N        ( $clog2(OUTPUT_DIM/2)+1 ),
-        .DELAY    ( 10                     )
+        .N        ( $clog2(OUTPUT_DIM)+1 ),
+        .DELAY    ( 10                   )
     ) delay_out_counter (
         .clk   ( clk                    ),
         .idata ( outdim_counter         ),
@@ -94,8 +95,10 @@ module convolution #(
         end else begin
             if (state == IDLE) begin
                 event_reg.valid <= '0;
+                in_ready <= '1;
             end
             if (in_event.valid) begin
+                in_ready <= '0;
                 iter_counter <= '0;
                 outdim_counter <= '0;
                 state <= CONV;
@@ -108,7 +111,7 @@ module convolution #(
             end
             if (state == CONV) begin
                 outdim_counter <= outdim_counter + 1;
-                if (outdim_counter == ((OUTPUT_DIM/2)-1)) begin
+                if (outdim_counter == (OUTPUT_DIM-1)) begin
                     if (iter_counter < num_iter) begin
                         iter_counter <= iter_counter + 1;
                         outdim_counter <= '0;
@@ -215,10 +218,10 @@ module convolution #(
 
     // Changed for -1
     always @(posedge clk) begin
-        features_a[2] <= (iter_counter_RM == 0) ? ZERO_POINT_IN : (ena_RM ? ((dt_scaled_a>>>32)+dt_scaled_a[31]+ZERO_POINT_IN) : '0);
-        features_a[3] <= (iter_counter_RM == 0) ? ZERO_POINT_IN : (ena_RM ? (SCALE_IN[edges_reg[idx_a_RM].df]) : '0);
-        features_b[2] <= enb_RM ? (dt_scaled_b>>>32)+dt_scaled_b[31]+ZERO_POINT_IN  : '0; //dif_t
-        features_b[3] <= enb_RM ? SCALE_IN[edges_reg[idx_b_RM].df] : '0;
+        features_a[3] <= (iter_counter_RM == 0) ? ZERO_POINT_IN : (ena_RM ? ((dt_scaled_a>>>32)+dt_scaled_a[31]+ZERO_POINT_IN) : '0);
+        features_a[4] <= (iter_counter_RM == 0) ? ZERO_POINT_IN : (ena_RM ? (SCALE_IN[edges_reg[idx_a_RM].df]) : '0);
+        features_b[3] <= enb_RM ? (dt_scaled_b>>>32)+dt_scaled_b[31]+ZERO_POINT_IN  : '0; //dif_t
+        features_b[4] <= enb_RM ? SCALE_IN[edges_reg[idx_b_RM].df] : '0;
     end
 
    /////////////////////////////////////////////////////////////////
@@ -228,28 +231,21 @@ module convolution #(
     //Prepare weights
     localparam WEIGHT_WIDTH = ((INPUT_DIM+2)*(PRECISION_OUT))+32; //bias
     logic [WEIGHT_WIDTH-1 : 0]     weight_mem1;
-    logic [WEIGHT_WIDTH-1 : 0]     weight_mem2;
     logic [PRECISION_OUT-1:0] single_weight1_reg [INPUT_DIM+1:0];
     logic [31:0]            single_bias1_reg;
     logic [PRECISION_OUT-1:0] single_weight1 [INPUT_DIM+1:0];
     logic [31:0]            single_bias1;
-    logic [PRECISION_OUT-1:0] single_weight2_reg [INPUT_DIM+1:0];
-    logic [31:0]            single_bias2_reg;
-    logic [PRECISION_OUT-1:0] single_weight2 [INPUT_DIM+1:0];
-    logic [31:0]            single_bias2;
 
-    dual_port_memory_weights #(
+    single_port_memory_weights #(
         .AWIDTH   ( $clog2(OUTPUT_DIM)               ),
         .DWIDTH   ( (PRECISION_OUT*(INPUT_DIM+2))+32 ),
-        .STEP     ( 36                               ),
         .RAM_TYPE ( "block"                          ),
         .INIT_PATH ( INIT_PATH                       )
     ) weights_memory   (
         .clk      ( clk      ),
         .en       ( state == CONV   ),
         .addr     ( outdim_counter  ),
-        .dout1    ( weight_mem1     ),
-        .dout2    ( weight_mem2     )
+        .dout     ( weight_mem1     )
     );
 
     genvar w;
@@ -257,24 +253,18 @@ module convolution #(
         for (w = 0; w < INPUT_DIM+2; w++) begin : weights_assign
             always @(posedge clk) begin
                 single_weight1_reg[w] <= weight_mem1[(((PRECISION_OUT)*(w+1))-1)+32 : ((PRECISION_OUT)*w)+32];
-                single_weight2_reg[w] <= weight_mem2[(((PRECISION_OUT)*(w+1))-1)+32 : ((PRECISION_OUT)*w)+32];
             end
         end
     endgenerate
 
     always @(posedge clk) begin
         single_bias1_reg <= weight_mem1[31:0];
-        single_bias2_reg <= weight_mem2[31:0];
         single_weight1 <= single_weight1_reg;
         single_bias1 <= single_bias1_reg;
-        single_weight2 <= single_weight2_reg;
-        single_bias2 <= single_bias2_reg;
     end
 
     logic [PRECISION_OUT-1:0] output_mat_a1;
-    logic [PRECISION_OUT-1:0] output_mat_a2;
     logic [PRECISION_OUT-1:0] output_mat_b1;
-    logic [PRECISION_OUT-1:0] output_mat_b2;
     logic [PRECISION_OUT-1:0] output_mat_a_full [OUTPUT_DIM-1:0];
     logic [PRECISION_OUT-1:0] output_mat_b_full [OUTPUT_DIM-1:0];
     logic [PRECISION_OUT-1:0] output_mat_full [OUTPUT_DIM-1:0];
@@ -302,23 +292,6 @@ module convolution #(
         .INPUT_DIM         ( INPUT_DIM+2    ),
         .PRECISION_IN      ( PRECISION_IN   ),
         .PRECISION_OUT     ( PRECISION_OUT  )
-    ) mul_a_2 (
-        .clk               ( clk               ),
-        .en                ( state_mul_in      ),
-        .feature_vector    ( features_a        ),
-        .weight_vector     ( single_weight2    ),
-        .bias              ( single_bias2      ),
-        .relu              ( 1'b1              ),
-        .multiplier        ( MULTIPLIER_OUT    ),
-        .zero_point_weight ( ZERO_POINT_WEIGHT ),
-        .zero_point_out    ( ZERO_POINT_OUT    ),
-        .result            ( output_mat_a2     )
-    );
-
-    vec_mul_conv1 #(
-        .INPUT_DIM         ( INPUT_DIM+2    ),
-        .PRECISION_IN      ( PRECISION_IN   ),
-        .PRECISION_OUT     ( PRECISION_OUT  )
     ) mul_b_1 (
         .clk               ( clk               ),
         .en                ( state_mul_in      ),
@@ -330,23 +303,6 @@ module convolution #(
         .zero_point_weight ( ZERO_POINT_WEIGHT ),
         .zero_point_out    ( ZERO_POINT_OUT    ),
         .result            ( output_mat_b1     )
-    );
-
-    vec_mul_conv1 #(
-        .INPUT_DIM         ( INPUT_DIM+2    ),
-        .PRECISION_IN      ( PRECISION_IN   ),
-        .PRECISION_OUT     ( PRECISION_OUT  )
-    ) mul_b_2 (
-        .clk               ( clk               ),
-        .en                ( state_mul_in      ),
-        .feature_vector    ( features_b        ),
-        .weight_vector     ( single_weight2    ),
-        .bias              ( single_bias2      ),
-        .relu              ( 1'b1              ),
-        .multiplier        ( MULTIPLIER_OUT    ),
-        .zero_point_weight ( ZERO_POINT_WEIGHT ),
-        .zero_point_out    ( ZERO_POINT_OUT    ),
-        .result            ( output_mat_b2     )
     );
 
     logic ena_mul_out, enb_mul_out;
@@ -371,30 +327,24 @@ module convolution #(
 
     always @(posedge clk) begin
         output_mat_a_full[outdim_counter_mul_out] <= ena_mul_out ? output_mat_a1 : '0;
-        output_mat_a_full[outdim_counter_mul_out+36] <= ena_mul_out ? output_mat_a2 : '0;
         output_mat_b_full[outdim_counter_mul_out] <= enb_mul_out ? output_mat_b1 : '0;
-        output_mat_b_full[outdim_counter_mul_out+36] <= enb_mul_out ? output_mat_b2 : '0;
     end
 
     always @(posedge clk) begin
         output_mat_full[outdim_counter_compare] <= output_mat_a_full[outdim_counter_compare] > output_mat_b_full[outdim_counter_compare] ? output_mat_a_full[outdim_counter_compare]
                                                                                                                                    : output_mat_b_full[outdim_counter_compare];
-        output_mat_full[outdim_counter_compare+36] <= output_mat_a_full[outdim_counter_compare+36] > output_mat_b_full[outdim_counter_compare+36] ? output_mat_a_full[outdim_counter_compare+36]
-                                                                                                                                   : output_mat_b_full[outdim_counter_compare+36];
         if (outdim_counter_acc == 0 && iter_counter_acc == 0) begin
             output_features <= '{default:ZERO_POINT_OUT};;
             output_features[outdim_counter_acc] <= output_mat_full[outdim_counter_acc];
-            output_features[outdim_counter_acc+36] <= output_mat_full[outdim_counter_acc+36];
         end
         else begin
             output_features[outdim_counter_acc] <= output_features[outdim_counter_acc] > output_mat_full[outdim_counter_acc] ? output_features[outdim_counter_acc] : output_mat_full[outdim_counter_acc];
-            output_features[outdim_counter_acc+36] <= output_features[outdim_counter_acc+36] > output_mat_full[outdim_counter_acc+36] ? output_features[outdim_counter_acc+36] : output_mat_full[outdim_counter_acc+36];
         end
         out_features <= output_features;
     end
 
     delay_module #(
-        .N        ( 40 ),
+        .N        ( 41 ),
         .DELAY    ( 12 )
     ) delay_event (
         .clk   ( clk     ),

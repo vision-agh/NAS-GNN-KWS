@@ -8,12 +8,14 @@ module generate_graph #(
     input  logic                          reset,
     input  logic      [T_WIDTH-1: 0]      t,
     input  logic      [F_WIDTH-1: 0]      f,
+    input  logic                          p,
     input  logic                          is_valid,
 
     output event_type                        out_event,
     output edge_type  [MAX_EDGES-1 : 0]      out_edges,
     output logic      [PRECISION_GEN-1:0]    t_feature,
     output logic      [PRECISION_GEN-1:0]    f_feature,
+    output logic      [PRECISION_GEN-1:0]    p_feature,
     output logic      [$clog2(MAX_EDGES) :0] edge_cnt
 );
 
@@ -25,6 +27,7 @@ module generate_graph #(
         if (is_valid) begin
             event_to_edges_gen.t <= t;
             event_to_edges_gen.f <= f;
+            event_to_edges_gen.p <= p;
             event_to_edges_gen.valid <= is_valid;
         end
         else begin
@@ -56,6 +59,7 @@ module generate_graph #(
         .out_edges     ( out_edges            ),
         .t_feature     ( t_feature            ),
         .f_feature     ( f_feature            ),
+        .p_feature     ( p_feature            ),
         .out_edge_cnt  ( edge_cnt             )
     );
 
