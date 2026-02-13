@@ -10,7 +10,7 @@ module convolution_sparse #(
     parameter int OUTPUT_DIM                 = 64,
     parameter int MULTIPLIER_DIFF_T          = 214742,
     parameter int ZERO_POINT_IN              = 0,
-    parameter int ZERO_POINT_OUT             = 135,
+    parameter int ZERO_POINT_OUT             = 129,
     parameter int MULTIPLIER_OUT             = 58670,
     parameter int ZERO_POINT_WEIGHT          = 30075,
     parameter string INIT_PATH_W             = "???",
@@ -102,6 +102,10 @@ module convolution_sparse #(
             en_mulb <= '0;
             en_mula_next <= '0;
             en_mulb_next <= '0;
+            event_reg <= '{default:0};
+            edges_reg <= '{default:0};
+            features_reg <= '{default:0};
+            edge_cnt_reg <= '{default:0};
         end else begin
         
             // Wait for event, cache input
@@ -407,5 +411,15 @@ module convolution_sparse #(
         .idata ( {edge_cnt_reg} ),
         .odata ( {out_edge_cnt} )
     );
+
+    // synthesis translate_off
+//    always @(posedge clk) begin
+//        if (!in_ready && in_event.valid) begin
+//            $display("DECREASE THE FIFO THROUGHPUT");
+//            $stop;
+//        end
+//    end
+    // synthesis translate_on
+
 
 endmodule

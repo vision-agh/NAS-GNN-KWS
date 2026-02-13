@@ -18,8 +18,13 @@ module feature_gen #(
     output edge_type  [MAX_EDGES-1:0]     out_edges,
     output logic      [PRECISION_GEN-1:0] t_feature,
     output logic      [PRECISION_GEN-1:0] f_feature,
+    output logic      [PRECISION_GEN-1:0] p_feature,
     output logic [$clog2(MAX_EDGES) :0]   out_edge_cnt
 );
+
+    //localparam P_POS = 170
+    //localparam N_POS = 0
+
     logic [7 : 0]                       num_edges;
     logic [$clog2(MAX_EDGES)-1 : 0]     counter,counter_reg;
     logic [23 : 0] t_temp;
@@ -36,6 +41,7 @@ module feature_gen #(
 
     assign out_event.t = in_event.t;
     assign out_event.f = in_event.f;
+    assign out_event.p = in_event.p;
     // assign out_event.is_last = in_event.is_last;
     assign out_event.valid = f_avg_valid && t_avg_valid;
     assign out_edges = in_edges;
@@ -105,6 +111,7 @@ module feature_gen #(
 
     assign t_feature = (extended_t_average>>>32) + extended_t_average[31] + ZERO_POINT;
     assign f_feature = (extended_f_average>>>32) + extended_f_average[31] + ZERO_POINT;
+    assign p_feature = in_event.p ? 170 : 0;
 
     div_t div_t ( //32 clock latency
         .aclk                   ( clk             ),

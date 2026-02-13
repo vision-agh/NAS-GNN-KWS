@@ -5,8 +5,8 @@ import nas_pkg::*;
 module buffer #(
     parameter int PRECISION_IN               = nas_pkg::PRECISION_CONV1,
     parameter int PRECISION_OUT              = nas_pkg::PRECISION_CONV1,
-    parameter int INPUT_DIM                  = 72,
-    parameter int OUTPUT_DIM                 = 72
+    parameter int INPUT_DIM                  = 3,
+    parameter int OUTPUT_DIM                 = 3
 )(
     input logic clk,
     input logic reset,

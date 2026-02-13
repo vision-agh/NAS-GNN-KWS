@@ -72,6 +72,7 @@ module edges_gen #(
     always @(posedge clk) begin
         if (reset) begin
             state <= IDLE;
+            state_reg <= IDLE;
             start <= '0;
             out_event.valid <= '0;
             edge_cnt <= '0;
@@ -87,11 +88,11 @@ module edges_gen #(
                 in_event_reg <= in_event;
                 edge_cnt <= '0;
             end
-            if (counter_reg == MAX_EDGES-1 && state_reg == GGEN) begin
+            if (counter == MAX_EDGES-1 && state_reg == GGEN) begin
                 state <= IDLE;
                 start <= '1;
             end
-            if (state == IDLE) begin
+            if (state_reg == IDLE) begin
                 if (start == 1) begin
                     out_edges <= edges_reg;
                     out_event <= in_event_reg;
