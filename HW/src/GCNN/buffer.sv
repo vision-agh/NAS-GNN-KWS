@@ -34,6 +34,7 @@ module buffer #(
         if (reset) begin
             is_ready <= 1'b1;
             is_empty <= 1'b1;
+            out_event.valid <= '0;
         end
         else begin
             if (get_next_reg) begin
@@ -56,23 +57,8 @@ module buffer #(
                 out_features <= reg_features;
                 out_edge_cnt <= reg_edge_cnt;
             end
-            
-            
         end
     end
-
-    always @(posedge clk) begin
-        if (reset) begin
-            is_empty <= 1;
-            out_event.valid <= '0;
-        end
-        else begin
-
-            
-
-        end
-    end
-
 
     delay_module #(
         .N        ( 1  ),

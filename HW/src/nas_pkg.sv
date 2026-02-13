@@ -13,6 +13,8 @@ package nas_pkg;
     parameter PRECISION_CONV4  = 8;                    
     parameter CLS_NUM = 11;
 
+    parameter THROUGHPUT = 400;
+
     parameter T_WIDTH  = 32; //Max of 1000000
     parameter T_DIFF_WIDTH  = 15; //Max of 20000
     parameter F_WIDTH  = 7; //Max of 64

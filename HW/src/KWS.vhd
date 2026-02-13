@@ -25,7 +25,7 @@ entity KWS is
         -- GCNN Output
         cnn_valid    : out STD_LOGIC;
         cnn_conf     : out STD_LOGIC_VECTOR(PRECISION_GEN-1 downto 0);
-        cnn_class    : out STD_LOGIC_VECTOR((8*20)-1 downto 0)
+        cnn_class    : out STD_LOGIC_VECTOR((8*11)-1 downto 0)
 
 
 --         debug_valid  : out std_logic;
@@ -84,7 +84,7 @@ architecture Behavioral of KWS is
             is_valid  : in std_logic;
             out_valid : out std_logic;
             out_conf  : out std_logic_vector(PRECISION_GEN-1 downto 0);
-            out_cls   : out std_logic_vector((8*20)-1 downto 0)
+            out_cls   : out std_logic_vector((8*11)-1 downto 0)
         );
     END COMPONENT;
 
