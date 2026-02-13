@@ -11,48 +11,38 @@ module maxpool #(
     input  logic                  clk,
     input  logic                  reset,
     input event_type              in_event,
+    input  logic [T_WIDTH-1 : 0]  last_time,
     input  logic  [PRECISION-1:0] in_features [OUTPUT_DIM-1:0],
     output logic [PRECISION-1 :0] out_features [OUTPUT_DIM-1 : 0],
     output logic                  out_valid
 );
-    logic [PRECISION-1:0] max_feature [OUTPUT_DIM-1:0] = '{default: ZERO_POINT};;
     logic [63:0]   threshold = TIME_WINDOW;
     logic          reset_max;
-    logic [63:0]   time_now = 0;
+    logic          valid_reg; 
+    logic [T_WIDTH-1 : 0]  time_now = 0;
 
     genvar i;
     generate
         for (i = 0; i < OUTPUT_DIM; i++) begin : calc_max
             always @(posedge clk) begin
-                if (in_event.valid) begin
-                    max_feature[i] <= (in_features[i] > max_feature[i]) ? in_features[i] : max_feature[i];
-                    time_now <= in_event.t*1000;
+                if (reset) begin
+                    out_features[i] <= ZERO_POINT;
                 end
                 else begin
-                    if (time_now != 0) begin
-                        time_now <= time_now + 5;
+                    if (in_event.valid) begin
+                        out_features[i] <= (in_features[i] > out_features[i]) ? in_features[i] : out_features[i];
+                        time_now <= in_event.t;
                     end
+                    if (reset_max) begin
+                        out_features[i] <= ZERO_POINT;
+                    end
+                    out_valid <= reset_max;
+                    valid_reg <= in_event.valid;
                 end
-                if (reset_max) begin
-                    if (in_event.valid) max_feature[i] <= in_features[i];
-                    else max_feature[i] <= ZERO_POINT;
-                end
-                out_features[i] <= max_feature[i];
             end
         end
     endgenerate
 
-    assign reset_max = (time_now > threshold);
-
-    always @(posedge clk) begin
-        if(reset) begin
-            threshold <= TIME_WINDOW;
-        end else begin
-            if (reset_max) begin
-                threshold <= threshold + TIME_WINDOW;
-            end
-            out_valid <= reset_max;
-        end    
-    end
+    assign reset_max = (last_time == time_now) && valid_reg;
 
 endmodule

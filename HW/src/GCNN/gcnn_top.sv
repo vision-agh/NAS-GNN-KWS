@@ -10,14 +10,15 @@ module gcnn_top #(
     input logic [F_WIDTH-1: 0]        f, 
     input logic                       p,
     input logic                       is_valid,
+    input  logic [T_WIDTH-1 : 0]      last_time,
     output logic                      is_ready,
-//    output logic                      out_valid,
-//    output logic [PRECISION_GEN-1 :0] out_conf,
-//    output logic [PRECISION_GEN-1 :0] out_cls [CLS_NUM-1:0]
+    output logic                      out_valid,
+    output logic [PRECISION_GEN-1 :0] out_conf,
+    output logic [PRECISION_GEN-1 :0] out_cls [CLS_NUM-1:0]
 
-    output event_type                   event_test,
-    output edge_type [MAX_EDGES-1:0]    edges_test,
-    output logic [PRECISION_GEN-1:0]    features_test [OUTPUT_DIM_1-1 : 0]
+//    output event_type                   event_test,
+//    output edge_type [MAX_EDGES-1:0]    edges_test,
+//    output logic [PRECISION_GEN-1:0]    features_test [OUTPUT_DIM_1-1 : 0]
 );
 
     localparam string MEMORY_DIR_PATH = "/home/pwz/Repo/NEW_IMPL/NAS-GNN-KWS/HW/mem/";
@@ -244,17 +245,17 @@ module gcnn_top #(
     buffer #(
         .FEATURE_DIM  ( OUTPUT_DIM_3 )
     ) u_buff4 (
-        .clk          ( clk               ),
-        .reset        ( reset             ),
-        .in_event     ( event_to_buff4    ),
-        .in_edges     ( edges_to_buff4    ),
-        .in_features  ( features_to_buff4 ),
-        .in_edge_cnt  ( edge_cnt_to_buff4 ),
-        .out_event    ( event_to_conv4    ),
-        .out_edges    ( edges_to_conv4    ),
-        .out_features ( features_to_conv4 ),
-        .out_edge_cnt ( edge_cnt_to_conv4 ),
-        .get_next     ( event_test.valid  )
+        .clk          ( clk                 ),
+        .reset        ( reset               ),
+        .in_event     ( event_to_buff4      ),
+        .in_edges     ( edges_to_buff4      ),
+        .in_features  ( features_to_buff4   ),
+        .in_edge_cnt  ( edge_cnt_to_buff4   ),
+        .out_event    ( event_to_conv4      ),
+        .out_edges    ( edges_to_conv4      ),
+        .out_features ( features_to_conv4   ),
+        .out_edge_cnt ( edge_cnt_to_conv4   ),
+        .get_next     ( event_to_pool.valid )
 
     );
 
@@ -278,39 +279,37 @@ module gcnn_top #(
          .in_edges     ( edges_to_conv4    ),
          .in_features  ( features_to_conv4 ),
          .in_edge_cnt  ( edge_cnt_to_conv4 ),
-         .out_event    ( event_test    ),
-         .out_edges    ( edges_test    ),
-         .out_features ( features_test )
-//         .out_event    ( event_to_pool     ),
-//         .out_edges    (                   ),
-//         .out_features ( features_to_pool  )
+//         .out_event    ( event_test    ),
+//         .out_edges    ( edges_test    ),
+//         .out_features ( features_test )
+         .out_event    ( event_to_pool     ),
+         .out_edges    (                   ),
+         .out_features ( features_to_pool  ),
+         .out_edge_cnt (                   )
      );
 
-// //    assign event_test = event_to_conv3;
-// //    assign edges_test = edges_to_conv3;
-// //    assign features_test = features_to_conv3;
+     logic head_valid;
 
-//     logic head_valid;
+     maxpool #(
+         .ZERO_POINT ( CONV4_ZERO_POINT_OUT )
+     ) u_pool (
+         .clk          ( clk              ),
+         .reset        ( reset            ),
+         .last_time    ( last_time        ),
+         .in_event     ( event_to_pool    ),
+         .in_features  ( features_to_pool ),
+         .out_features ( features_to_head ),
+         .out_valid    ( head_valid       )
+      );
 
-//     maxpool #(
-//         .ZERO_POINT ( CONV4_ZERO_POINT_OUT )
-//     ) u_pool (
-//         .clk          ( clk              ),
-//         .reset        ( reset            ),
-//         .in_event     ( event_to_pool    ),
-//         .in_features  ( features_to_pool ),
-//         .out_features ( features_to_head ),
-//         .out_valid    ( head_valid       )
-//      );
-
-//     gru_head u_head (
-//         .clk         ( clk              ),
-//         .reset       ( reset            ),
-//         .in_valid    ( head_valid       ),
-//         .in_features ( features_to_head ),
-//         .out_conf    ( out_conf         ),
-//         .out_cls     ( out_cls          ),
-//         .out_valid   ( out_valid        )
-//      );
+     gru_head u_head (
+         .clk         ( clk              ),
+         .reset       ( reset            ),
+         .in_valid    ( head_valid       ),
+         .in_features ( features_to_head ),
+         .out_conf    ( out_conf         ),
+         .out_cls     ( out_cls          ),
+         .out_valid   ( out_valid        )
+      );
 
 endmodule : gcnn_top
