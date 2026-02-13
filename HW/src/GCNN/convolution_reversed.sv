@@ -378,7 +378,9 @@ module convolution_sparse #(
         output_mat_full[outdim_counter_compare] <= output_mat_a_full[outdim_counter_compare] > output_mat_b_full[outdim_counter_compare] ?
                                                    output_mat_a_full[outdim_counter_compare] : output_mat_b_full[outdim_counter_compare]; 
         if (outdim_counter_acc == 0 && iter_counter_acc == 0) begin
-            output_features <= '{default:ZERO_POINT_OUT};;
+            for (int i=0; i<OUTPUT_DIM; i=i+1) begin
+                output_features[i] <= ZERO_POINT_OUT;
+            end
             output_features[outdim_counter_acc] <= output_mat_full[outdim_counter_acc];
         end
         else begin
