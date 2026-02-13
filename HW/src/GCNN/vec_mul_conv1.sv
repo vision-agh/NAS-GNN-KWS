@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module vec_mul_conv1 #(
-    parameter int INPUT_DIM = 4,
+    parameter int INPUT_DIM = 5,
     parameter int PRECISION_IN = 8,
     parameter int PRECISION_OUT = 8
 )( 

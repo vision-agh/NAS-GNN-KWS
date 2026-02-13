@@ -7,7 +7,7 @@ module gcnn_ut;
     parameter MAX_X_COORD = 120;
     parameter MAX_Y_COORD = 100;
     parameter INPUT_PATH = "/home/pwz/Downloads/20260204_231115_job12165103_task2_x1002c4s5b1n0/debug_outputs/filtered_events.txt";
-    parameter OUTPUT_PATH = "/home/pwz/Repo/SW/CONV1.txt";
+    parameter OUTPUT_PATH = "/home/pwz/Repo/SW/CONV2.txt";
     parameter NS_PER_CLK = 5; // 250MHz is 4 clk every ns
     parameter TIME_WINDOW = 1000000; // We test only single time window
 

@@ -209,6 +209,8 @@ module convolution_sparse #(
 
             // Save last feature
             if (state == SAVE) begin
+                en_mula <= '0;
+                en_mulb <= '0;
                 save_feature <= 1'b0;
                 ptr_mem <= 1;
                 if (state_reg == CONV) begin
@@ -298,7 +300,7 @@ module convolution_sparse #(
     logic [PRECISION_OUT-1:0] output_mat_b_full [OUTPUT_DIM-1:0];
     logic [PRECISION_OUT-1:0] output_mat_full [OUTPUT_DIM-1:0];
 
-    vec_mul_conv1 #(
+    vec_mul #(
         .INPUT_DIM         ( INPUT_DIM+2    ),
         .PRECISION_IN      ( PRECISION_IN   ),
         .PRECISION_OUT     ( PRECISION_OUT  )
@@ -315,7 +317,7 @@ module convolution_sparse #(
         .result            ( output_mat_a      )
     );
 
-    vec_mul_conv1 #(
+    vec_mul #(
         .INPUT_DIM         ( INPUT_DIM+2    ),
         .PRECISION_IN      ( PRECISION_IN   ),
         .PRECISION_OUT     ( PRECISION_OUT  )
@@ -386,7 +388,7 @@ module convolution_sparse #(
     end
 
     delay_module #(
-        .N        ( 40 ),
+        .N        ( 41 ),
         .DELAY    ( 5 )
     ) delay_event (
         .clk   ( clk         ),
@@ -413,12 +415,12 @@ module convolution_sparse #(
     );
 
     // synthesis translate_off
-//    always @(posedge clk) begin
-//        if (!in_ready && in_event.valid) begin
-//            $display("DECREASE THE FIFO THROUGHPUT");
-//            $stop;
-//        end
-//    end
+    always @(posedge clk) begin
+        if (!in_ready && in_event.valid) begin
+            $display("DECREASE THE FIFO THROUGHPUT");
+            $stop;
+        end
+    end
     // synthesis translate_on
 
 

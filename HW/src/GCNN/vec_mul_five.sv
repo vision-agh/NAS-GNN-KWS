@@ -18,7 +18,7 @@ module vec_mul_five #(
     genvar j;
     generate
         always @(posedge clk) begin
-            for (int j=0; j<8; j=j+1) begin: multiply
+            for (int j=0; j<5; j=j+1) begin: multiply
                 result_reg[j] <= en ? (features[j] * weights[j]) : result_reg[j];
             end
             sum_reg <= en ? features[0] + 
