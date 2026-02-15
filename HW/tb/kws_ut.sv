@@ -109,7 +109,7 @@ module kws_ut;
             end
             if (current_time_ns >= iter*TIME_WINDOW) begin
                 idx_time <= idx_time+1;
-                iter <= iter+TIME_WINDOW;
+                iter <= iter+1;
                 if (last_t > ((iter-1)*(TIME_WINDOW/1000))) begin
                     last_time <= last_t;
                 end
@@ -129,13 +129,6 @@ module kws_ut;
                 is_valid <= 0;
             end
  
-            // Put values on input whenever the timestamp is smaller than simultation time
-            if (is_ready && is_valid) begin
-                t_feature_reg <= t_coords.pop_front();
-                f_feature_reg <= f_coords.pop_front();
-                p_feature_reg <= p_coords.pop_front();
-            end
-
             // Write outputs to file
             if (event_test.valid) begin
                 for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
