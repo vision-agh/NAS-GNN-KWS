@@ -12,13 +12,15 @@ module maxpool #(
     input  logic                  reset,
     input event_type              in_event,
     input  logic [T_WIDTH-1 : 0]  last_time,
+    input  logic [15 : 0]         idx_time,
     input  logic  [PRECISION-1:0] in_features [OUTPUT_DIM-1:0],
     output logic [PRECISION-1 :0] out_features [OUTPUT_DIM-1 : 0],
     output logic                  out_valid
 );
     logic [63:0]   threshold = TIME_WINDOW;
     logic          reset_max;
-    logic          valid_reg; 
+    logic          valid_reg;
+    logic [15 : 0] idx_time_local = 0;
     logic [T_WIDTH-1 : 0]  time_now = 0;
 
     genvar i;
@@ -33,16 +35,34 @@ module maxpool #(
                         out_features[i] <= (in_features[i] > out_features[i]) ? in_features[i] : out_features[i];
                         time_now <= in_event.t;
                     end
-                    if (reset_max) begin
+                    if (out_valid) begin
                         out_features[i] <= ZERO_POINT;
                     end
-                    out_valid <= reset_max;
                     valid_reg <= in_event.valid;
                 end
             end
         end
     endgenerate
 
-    assign reset_max = (last_time == time_now) && valid_reg;
+    always @(posedge clk) begin
+        if (reset) begin
+            idx_time_local <= 1;
+        end
+        else begin
+            if (in_event.valid) begin
+                time_now <= in_event.t;
+            end
+            if (out_valid) begin
+                idx_time_local <= idx_time_local + 1;
+            end
+            valid_reg <= in_event.valid;
+        end
+    end
+    logic is_curent;
+    logic is_last;
+
+    assign is_last = ((last_time != 0) && (last_time == time_now)) || (last_time == 0);
+    assign is_curent = (idx_time_local == idx_time);
+    assign out_valid = is_last && valid_reg && is_curent;
 
 endmodule

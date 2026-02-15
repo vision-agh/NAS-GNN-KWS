@@ -6,7 +6,7 @@ module gru_head #(
     parameter int PRECISION            = 8,
     parameter int CLS_NUM              = 11,
     parameter int HEAD_DIM             = 72,
-    parameter string INIT_PATH         = "/home/pwz/Repo/NAS-GCN-KWS/HW/mem/head.mem"
+    parameter string INIT_PATH         = "/home/pwz/Repo/NEW_IMPL/NAS-GNN-KWS/HW/mem/head.mem"
 )(
     input logic clk,
     input logic reset,
@@ -18,10 +18,13 @@ module gru_head #(
     output logic [PRECISION-1 :0]  out_cls [CLS_NUM-1:0]
 );
                                     //   CONF | CLASS | GRU_X | LIN_2 | LIN_1 | GRU_H
-    logic [31:0]     multiplier [5:0] = {4943632,4791722,30244938,37899464,22171898,4709748};
-    logic [PRECISION-1:0]  zp_w [5:0] = {64,138,137,130,120,121};
-    logic [PRECISION-1:0]  zp_o [5:0] = {146,131,113,154,111,113};
-    localparam HIDDEN_IN_ZERO_POINT = 128;
+//    logic [31:0]     multiplier [5:0] = {4943632,4791722,30244938,37899464,22171898,4709748};
+//    logic [PRECISION-1:0]  zp_w [5:0] = {64,138,137,130,120,121};
+//    logic [PRECISION-1:0]  zp_o [5:0] = {146,131,113,154,111,113};
+    logic [31:0]     multiplier [5:0] = {3793016,3834090,22181600,20288056,16066800,1247868};
+    logic [PRECISION-1:0]  zp_w [5:0] = {135,127,138,97,145,123};
+    logic [PRECISION-1:0]  zp_o [5:0] = {160,121,129,55,73,129};
+    localparam HIDDEN_IN_ZERO_POINT = 127;
 
     initial begin
         out_conf <= '{default:0};
@@ -474,10 +477,10 @@ module gru_head #(
     hammard #(
         .DIM                ( HEAD_DIM  ),
         .PRECISION          ( PRECISION ),
-        .MULTIPLIER         ( 19760490  ), //Scale r_hn (32 bit): 19760490
+        .MULTIPLIER         ( 16843010  ), //Scale r_hn (32 bit): 16843010
         .ZERO_POINT_IN_1    ( 0         ), //Output sigmoid r zero point: 0
-        .ZERO_POINT_IN_2    ( 113       ), //Output linear zero point: 113
-        .ZERO_POINT_OUT     ( 133       )  //Output r_hn zero point: 133
+        .ZERO_POINT_IN_2    ( 129       ), //Output linear zero point: 129
+        .ZERO_POINT_OUT     ( 129       )  //Output r_hn zero point: 133
     ) mul_r_hn (
         .clk            ( clk                ),
         .reset          ( reset              ),
@@ -491,10 +494,10 @@ module gru_head #(
     hammard #(
         .DIM                ( HEAD_DIM  ),
         .PRECISION          ( PRECISION ),
-        .MULTIPLIER         ( 16908616  ), //Scale z_h (32 bit): 16908616
+        .MULTIPLIER         ( 17201276  ), //Scale z_h (32 bit): 17201276
         .ZERO_POINT_IN_1    ( 0         ), //Output sigmoid z zero point: 0
-        .ZERO_POINT_IN_2    ( 128       ), //Hidden zero point: 128
-        .ZERO_POINT_OUT     ( 128       )  //Output z_h zero point: 128
+        .ZERO_POINT_IN_2    ( 127       ), //Hidden zero point: 127
+        .ZERO_POINT_OUT     ( 127       )  //Output z_h zero point: 127
     ) mul_z_h_old (
         .clk            ( clk                   ),
         .reset          ( reset                 ),
@@ -508,10 +511,10 @@ module gru_head #(
     hammard #(
         .DIM                ( HEAD_DIM  ),
         .PRECISION          ( PRECISION ),
-        .MULTIPLIER         ( 16909320  ), //Scale z_n (32 bit): 16909320
+        .MULTIPLIER         ( 16876298  ), //Scale z_n (32 bit): 16876298
         .ZERO_POINT_IN_1    ( 127       ), //Output tanh n zero point: 127
         .ZERO_POINT_IN_2    ( 0         ), //Output sigmoid z zero point: 0
-        .ZERO_POINT_OUT     ( 127       )  //Output z_n zero point: 127
+        .ZERO_POINT_OUT     ( 128       )  //Output z_n zero point: 128
     ) mul_diff_z_n (
         .clk            ( clk                    ),
         .reset          ( reset                  ),
@@ -525,11 +528,11 @@ module gru_head #(
     add_vectors_rescale #(
         .DIM                ( HEAD_DIM   ),
         .PRECISION          ( PRECISION  ),
-        .MULTIPLIER_IN_1    ( 33'd4278302464 ), //Scale new_h_zh (32 bit): 4278302464
-        .MULTIPLIER_IN_2    ( 33'd4224130048 ), //Scale new_h_zn (32 bit): 4224130048
-        .ZERO_POINT_IN_1    ( 128        ), //Output z_h zero point: 128
-        .ZERO_POINT_IN_2    ( 127        ), //Output z_n zero point: 127
-        .ZERO_POINT_OUT     ( 128        )  //Hidden zero point: 128
+        .MULTIPLIER_IN_1    ( 33'd4205512448 ), //Scale new_h_zh (32 bit): 4205512448
+        .MULTIPLIER_IN_2    ( 33'd4203538432 ), //Scale new_h_zn (32 bit): 4203538432
+        .ZERO_POINT_IN_1    ( 127        ), //Output z_h zero point: 127
+        .ZERO_POINT_IN_2    ( 128        ), //Output z_n zero point: 128
+        .ZERO_POINT_OUT     ( 127        )  //Hidden zero point: 127
     ) add_zn_zh (
         .clk                    ( clk ),
         .reset                  ( reset ),
