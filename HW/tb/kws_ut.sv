@@ -7,12 +7,14 @@ module kws_ut;
     parameter INPUT_PATH = "/home/pwz/Downloads/20260204_231115_job12165103_task2_x1002c4s5b1n0/debug_outputs/filtered_events.txt";
     parameter OUTPUT_PATH = "/home/pwz/Repo/SW/CONV2.txt";
     parameter NS_PER_CLK = 5; // 250MHz is 4 clk every ns
-    parameter TIME_WINDOW = 1000000; // We test only single time window
+    parameter TIME_WINDOW = 10000000; // We test only single time window
 
     logic [T_WIDTH-1:0] t;
     logic [F_WIDTH-1:0] f;
     logic               p;
-    logic is_valid = 0;
+    logic is_valid;
+    logic [15:0]        idx_time = 0;
+    logic [31:0]        last_time = 0;
 
     event_type                   event_test;
     edge_type [MAX_EDGES-1:0]    edges_test;
@@ -32,13 +34,18 @@ module kws_ut;
 	logic [T_WIDTH : 0]  f_coords [$];
 	logic [F_WIDTH : 0]  t_coords [$];
     logic                p_coords [$];
+    logic [31:0]         last_times [$];
+
+	logic [T_WIDTH : 0]  f_fifo [$];
+	logic [F_WIDTH : 0]  t_fifo [$];
+    logic                p_fifo [$];
 
     // Input and output files handler, scheduler.
     int            cnt = 0;
     int            file;
     int            file_out;
     string         line;
-    int            current_time_ns = 49000;
+    int            current_time_ns = 8000000;
     string         t_string;
     string         f_string;
     string         p_string;
@@ -50,7 +57,6 @@ module kws_ut;
         while(!$feof(file)) begin
             $fgets(line, file);
             $sscanf (line, "%s %s %s", t_string, f_string, p_string);
-            
             // Save coordinates
             t_coords.push_back(t_string.atoi());
             f_coords.push_back(f_string.atoi());
@@ -60,8 +66,6 @@ module kws_ut;
             else begin
                 p_coords.push_back(1'b0);
             end
-            
-
         end
         $fclose(file);
 
@@ -69,7 +73,7 @@ module kws_ut;
         t_feature_reg = t_coords.pop_front();
         f_feature_reg = f_coords.pop_front();
         p_feature_reg = p_coords.pop_front();
-        
+
         while(1) begin
             if (cnt<10) begin
                 rst <= 1'b1;
@@ -84,36 +88,53 @@ module kws_ut;
     end
 
     logic is_ready;
-
+    logic get_next = 1;
+    int iter = 1;
+    logic [31:0] last_t = 0;
     always @(posedge clk) begin
         if (!rst) begin
             
             // Caluclate simulation time
             current_time_ns = current_time_ns + NS_PER_CLK;
-//            is_ready <= 1'b0;
-//            if (current_time_ns % 2000 == 0) begin
-//                is_ready <= 1'b1;
-//            end
-//            // Put values on input whenever the timestamp is smaller than simultation time
-//            if (t_feature_reg * 1000 < current_time_ns && t_feature_reg <= TIME_WINDOW) begin
-//                is_valid <= 1;
-//                t_feature_reg   <= t_coords.pop_front();
-//                f_feature_reg   <= f_coords.pop_front();
-//            end
-//            else begin
-//                 is_valid <= 0;
-//            end
-            is_valid <= '1;
+
+            // Put values on input whenever the timestamp is smaller than simultation time
+            if (t_feature_reg * 1000 <= current_time_ns) begin
+                f_fifo.push_back(f_feature_reg);
+                t_fifo.push_back(t_feature_reg);
+                p_fifo.push_back(p_feature_reg);
+                last_t = t_feature_reg;
+                t_feature_reg <= t_coords.pop_front();
+                f_feature_reg <= f_coords.pop_front();
+                p_feature_reg <= p_coords.pop_front();
+            end
+            if (current_time_ns >= iter*TIME_WINDOW) begin
+                idx_time <= idx_time+1;
+                iter <= iter+TIME_WINDOW;
+                if (last_t > ((iter-1)*(TIME_WINDOW/1000))) begin
+                    last_time <= last_t;
+                end
+                else begin
+                    last_time <= '0;
+                end            
+            end
+ 
+            if (f_fifo.size() != 0 && is_ready && !is_valid) begin
+                is_valid <= 1;
+                t <= t_fifo.pop_front();
+                f <= f_fifo.pop_front();
+                p <= p_fifo.pop_front();
+                get_next <= '0;
+            end
+            else begin
+                is_valid <= 0;
+            end
+ 
             // Put values on input whenever the timestamp is smaller than simultation time
             if (is_ready && is_valid) begin
                 t_feature_reg <= t_coords.pop_front();
                 f_feature_reg <= f_coords.pop_front();
                 p_feature_reg <= p_coords.pop_front();
             end
-
-            t <= t_feature_reg;
-            f <= f_feature_reg;
-            p <= p_feature_reg;
 
             // Write outputs to file
             if (event_test.valid) begin
@@ -124,7 +145,7 @@ module kws_ut;
             end
 
             // Finish simulation after 50.1 ms
-            if (current_time_ns > 3000000) begin
+            if (current_time_ns > 80000000) begin
                 $fclose(file_out);
                 $finish;
             end
@@ -135,7 +156,8 @@ module kws_ut;
     gcnn_top uut (
         .clk(clk),
         .reset(rst),
-        .last_time(9838),
+        .last_time(last_time),
+        .idx_time(idx_time),
         .t(t),
         .f(f),
         .p(p),
