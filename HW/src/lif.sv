@@ -15,9 +15,14 @@ module lif #(
     input  logic [T_WIDTH-1:0]  in_t,
     input  logic [F_WIDTH-1:0]  in_f,
     
+    input  logic [15:0]         idx_time_in,
+
     output logic                out_valid,
     output logic [T_WIDTH-1:0]  out_t,
-    output logic [F_WIDTH-1:0]  out_f
+    output logic [F_WIDTH-1:0]  out_f,
+
+    output logic [T_WIDTH-1:0]  last_time_out,
+    output logic [15:0]         idx_time_out
 );
 
     localparam int DATA_WIDTH = T_WIDTH + 32;
@@ -33,6 +38,14 @@ module lif #(
 
     logic [31:0] calc_pot_result;
     logic        calc_fire;
+    
+    logic [15:0] prev_idx_time;
+    logic [T_WIDTH-1:0] current_window_last_ts;
+    logic               event_seen_in_window;
+
+    // ----------------------------------------------------------------------
+    // Main Pipeline
+    // ----------------------------------------------------------------------
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -59,9 +72,11 @@ module lif #(
         end
     end
 
+    // ----------------------------------------------------------------------
+    // LIF Mathematics
+    // ----------------------------------------------------------------------
     logic [T_WIDTH-1:0] last_time;
     logic [31:0]        last_pot;
-    
     logic [T_WIDTH-1:0] delta_t;
     logic [31:0]        decay;
     logic [31:0]        pot_decayed;
@@ -127,5 +142,38 @@ module lif #(
         .dinb     (mem_din_b),
         .doutb    ()
     );
+
+    // ----------------------------------------------------------------------
+    // Last Time Tracking per Window
+    // ----------------------------------------------------------------------
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            prev_idx_time        <= '0;
+            current_window_last_ts <= '0;
+            event_seen_in_window <= 1'b0;
+            last_time_out        <= '0;
+            idx_time_out         <= '0;
+        end else begin
+
+            if (out_valid) begin
+                current_window_last_ts <= out_t;
+                event_seen_in_window   <= 1'b1;
+            end
+
+            if (idx_time_in != prev_idx_time) begin
+                idx_time_out <= prev_idx_time; 
+                
+                if (event_seen_in_window) begin
+                    last_time_out <= current_window_last_ts;
+                end else begin
+                    last_time_out <= '0; 
+                end
+
+                prev_idx_time        <= idx_time_in;
+                event_seen_in_window <= 1'b0;
+                current_window_last_ts <= '0;
+            end
+        end
+    end
 
 endmodule

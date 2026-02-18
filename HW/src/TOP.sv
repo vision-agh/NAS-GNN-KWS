@@ -3,8 +3,8 @@
 import nas_pkg::*;
 
 module NAS_KWS_TOP ( 
-    input  logic        clock_125p,
-    input  logic        clock_125n,
+    input  logic        clk_48,
+    input  logic        clk_200,
     input  logic        rst_ext,
 
     // I2S signals from codec
@@ -13,32 +13,20 @@ module NAS_KWS_TOP (
     input  logic        i2s_lr,
 
     // GCNN outputs
-    output logic                     out_valid,
+    output logic                   out_valid,
     output logic [PRECISION_GEN-1:0] out_conf,
-    output logic [(8*20)-1:0]        out_cls
+    output logic [(PRECISION_GEN*CLS_NUM)-1:0]        out_cls
 );
-
-    logic clk_48;
-    logic clk_200;
 
     logic [6:0] aer_data;
     logic       aer_req;
     logic       aer_ack;
 
     logic [T_WIDTH-1:0] link_t;
+    logic [15:0] idx_time_link;
     logic [F_WIDTH-1:0] link_f;
     logic               link_valid;
-    logic               link_busy;
-
-
-    clk_wiz_0 u_clock_gen (
-        .clk_out1  (clk_48),
-        .clk_out2  (clk_200),
-        .reset     (rst_ext),
-        .clk_in1_p (clock_125p),
-        .clk_in1_n (clock_125n)
-    );
-
+    
 
     // 48 MHZ domain
     OpenNas_Cascade_MONO_64ch i_NAS (
@@ -68,10 +56,10 @@ module NAS_KWS_TOP (
         // Output to KWS
         .out_t     (link_t),
         .out_f     (link_f),
-        .out_valid (link_valid)
+        .out_valid (link_valid),
+        .idx_time (idx_time_link)
     );
 
-    // 48 MHZ domain to 200 MHZ CDC handled internaly
     KWS #(
         .T_WIDTH       (T_WIDTH),
         .F_WIDTH       (F_WIDTH),
@@ -79,7 +67,8 @@ module NAS_KWS_TOP (
         .NUM_CHANNEL   (NUM_CHANNEL),
         .PRECISION_GEN (PRECISION_GEN),
         .WEIGHT        (WEIGHT),
-        .DECAY_SHIFT   (DECAY_SHIFT)
+        .DECAY_SHIFT   (DECAY_SHIFT),
+        .CLS_NUM   (CLS_NUM)
     ) u_kws (
         .clock_200 (clk_200),
         .clock_48  (clk_48),
@@ -88,6 +77,7 @@ module NAS_KWS_TOP (
         .in_t      (link_t),
         .in_f      (link_f),
         .in_valid  (link_valid),
+        .idx_time  (idx_time_link),
         
         .cnn_valid (out_valid),
         .cnn_conf  (out_conf),
