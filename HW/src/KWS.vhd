@@ -84,7 +84,7 @@ architecture Behavioral of KWS is
             f           : in std_logic_vector(F_WIDTH-1 downto 0);
             is_valid    : in std_logic;
             is_ready    : out std_logic;
-            last_time     : in STD_LOGIC_VECTOR(T_WIDTH downto 0);
+            last_time     : in STD_LOGIC_VECTOR(T_WIDTH-1 downto 0);
             idx_time      : in STD_LOGIC_VECTOR(15 downto 0);
             out_valid   : out std_logic;
             out_conf    : out std_logic_vector(PRECISION_GEN-1 downto 0);
