@@ -13,11 +13,9 @@ package nas_pkg;
     parameter PRECISION_CONV4  = 8;                    
     parameter CLS_NUM = 11;
 
-    parameter THROUGHPUT = 400;
-
     parameter T_WIDTH  = 32; //Max of 1000000
     parameter T_DIFF_WIDTH  = 15; //Max of 20000
-    parameter F_WIDTH  = 7; //Max of 64
+    parameter F_WIDTH  = 6; //Max of 64
 
     parameter NUM_CHANNEL = 64;
 
@@ -50,14 +48,14 @@ package nas_pkg;
     parameter DECAY_SHIFT = 8;
     parameter WEIGHT = 32;
     const int thresholds [0:NUM_CHANNEL-1] = '{
-            64, 63, 62, 62, 61, 60, 60, 59,
-            59, 58, 57, 57, 56, 56, 55, 54, 
-            54, 53, 53, 52, 51, 51, 50, 50, 
-            49, 49, 48, 48, 47, 47, 46, 46, 
-            45, 45, 44, 44, 43, 43, 42, 42, 
-            41, 41, 40, 40, 40, 39, 39, 38, 
-            38, 37, 37, 37, 36, 36, 35, 35, 
-            35, 34, 34, 34, 33, 33, 33, 32
+            48, 48, 48, 48, 48, 48, 48, 48,
+            48, 48, 48, 48, 48, 48, 48, 48, 
+            48, 48, 48, 48, 48, 48, 48, 48, 
+            48, 48, 48, 48, 48, 48, 48, 48, 
+            48, 48, 48, 48, 48, 48, 48, 48, 
+            48, 48, 48, 48, 48, 48, 48, 48, 
+            48, 48, 48, 48, 48, 48, 48, 48, 
+            48, 48, 48, 48, 48, 48, 48, 48
         };
 
 endpackage

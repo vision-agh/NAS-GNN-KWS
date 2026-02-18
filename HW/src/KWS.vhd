@@ -5,8 +5,8 @@ use IEEE.NUMERIC_STD.ALL;
 entity KWS is
     Generic (   
         T_WIDTH     : INTEGER := 32;
-        F_WIDTH     : INTEGER := 7;
-        NUM_CHANNEL : integer := 128;
+        F_WIDTH     : INTEGER := 6;
+        NUM_CHANNEL : integer := 64;
         WEIGHT      : integer := 32;
         DECAY_SHIFT : integer := 8;
         PRECISION_GEN  : integer := 8 ;
@@ -19,7 +19,7 @@ entity KWS is
 
         -- Input Interface
         in_t         : in STD_LOGIC_VECTOR(T_WIDTH-1  downto 0);
-        in_f         : in STD_LOGIC_VECTOR(F_WIDTH-1 downto 0);
+        in_f         : in STD_LOGIC_VECTOR(F_WIDTH downto 0);
         in_valid     : in STD_LOGIC;
         idx_time     : in STD_LOGIC_VECTOR(15 downto 0);
 
@@ -46,12 +46,13 @@ architecture Behavioral of KWS is
             rst        : in  std_logic;
             in_req     : in  std_logic;
             in_t       : in  std_logic_vector(T_WIDTH-1 downto 0);
-            in_f       : in  std_logic_vector(F_WIDTH-1 downto 0);
+            in_f       : in  std_logic_vector(F_WIDTH downto 0);
             idx_time_in : in std_logic_vector(15 downto 0);
             
             out_valid  : out std_logic;
             out_t      : out std_logic_vector(T_WIDTH-1 downto 0);
             out_f      : out std_logic_vector(F_WIDTH-1 downto 0);
+            out_p      : out std_logic;
             
             last_time_out : out std_logic_vector(T_WIDTH-1 downto 0);
             idx_time_out  : out std_logic_vector(15 downto 0)
@@ -82,10 +83,11 @@ architecture Behavioral of KWS is
             reset       : in std_logic;
             t           : in std_logic_vector(T_WIDTH-1 downto 0);
             f           : in std_logic_vector(F_WIDTH-1 downto 0);
+            p           : in std_logic;
             is_valid    : in std_logic;
             is_ready    : out std_logic;
-            last_time     : in STD_LOGIC_VECTOR(T_WIDTH-1 downto 0);
-            idx_time      : in STD_LOGIC_VECTOR(15 downto 0);
+            last_time   : in STD_LOGIC_VECTOR(T_WIDTH-1 downto 0);
+            idx_time    : in STD_LOGIC_VECTOR(15 downto 0);
             out_valid   : out std_logic;
             out_conf    : out std_logic_vector(PRECISION_GEN-1 downto 0);
             out_cls     : out std_logic_vector((PRECISION_GEN*CLS_NUM)-1 downto 0)
@@ -95,6 +97,7 @@ architecture Behavioral of KWS is
     signal lif_out_valid  : std_logic;
     signal lif_out_t      : std_logic_vector(T_WIDTH-1 downto 0);
     signal lif_out_f      : std_logic_vector(F_WIDTH-1 downto 0);
+    signal lif_out_p      : std_logic;
 
     signal lif_last_time_48 : std_logic_vector(T_WIDTH-1 downto 0);
     signal lif_idx_time_48  : std_logic_vector(15 downto 0);
@@ -110,6 +113,7 @@ architecture Behavioral of KWS is
     signal valid_r        : std_logic := '0';
     signal t_r            : std_logic_vector(T_WIDTH-1 downto 0);
     signal f_r            : std_logic_vector(F_WIDTH-1 downto 0);
+    signal p_r            : std_logic;
     
     -- CDC Signals
     signal toggle_48      : std_logic := '0';
@@ -142,6 +146,7 @@ begin
         out_valid   => lif_out_valid,
         out_t       => lif_out_t,
         out_f       => lif_out_f,
+        out_p       => lif_out_p,
         
         last_time_out => lif_last_time_48,
         idx_time_out  => lif_idx_time_48
@@ -181,7 +186,7 @@ begin
     end process;
 
     fifo_wr_en <= lif_out_valid; 
-    fifo_din   <= lif_out_t & lif_out_f & '0'; 
+    fifo_din   <= lif_out_t & lif_out_f & lif_out_p & '0'; 
 
     FIFO_CDC : fifo_generator_ok
     PORT MAP (
@@ -219,13 +224,15 @@ begin
             valid_r <= '0';
             t_r     <= (others => '0');
             f_r     <= (others => '0');
+            p_r     <= '0'; 
             rd_en_d1 := '0';
         elsif rising_edge(clock_200) then
             valid_r <= rd_en_d1;
             
             if rd_en_d1 = '1' then
                 f_r <= dout(F_WIDTH downto 1);
-                t_r <= dout(39 downto F_WIDTH+1);
+                t_r <= dout(39 downto F_WIDTH+2);
+                p_r <= dout(F_WIDTH+1);
             end if;
             
             rd_en_d1 := rd_en;
@@ -238,6 +245,7 @@ begin
         reset      => rst_ext,
         t          => t_r,
         f          => f_r,
+        p          => p_r,
         is_valid   => valid_r,
         is_ready   => ready_r,
         out_valid  => cnn_valid,

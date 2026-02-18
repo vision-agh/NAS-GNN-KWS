@@ -63,7 +63,6 @@ module NAS_KWS_TOP (
     KWS #(
         .T_WIDTH       (T_WIDTH),
         .F_WIDTH       (F_WIDTH),
-        .THROUGHPUT    (THROUGHPUT),
         .NUM_CHANNEL   (NUM_CHANNEL),
         .PRECISION_GEN (PRECISION_GEN),
         .WEIGHT        (WEIGHT),

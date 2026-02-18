@@ -13,13 +13,14 @@ module lif #(
     
     input  logic                in_req,
     input  logic [T_WIDTH-1:0]  in_t,
-    input  logic [F_WIDTH-1:0]  in_f,
+    input  logic [F_WIDTH:0]    in_f,
     
     input  logic [15:0]         idx_time_in,
 
     output logic                out_valid,
     output logic [T_WIDTH-1:0]  out_t,
     output logic [F_WIDTH-1:0]  out_f,
+    output logic                out_p,
 
     output logic [T_WIDTH-1:0]  last_time_out,
     output logic [15:0]         idx_time_out
@@ -31,6 +32,7 @@ module lif #(
     logic v1, v2, v3;
     logic [T_WIDTH-1:0] t1, t2, t3;
     logic [F_WIDTH-1:0] f1, f2, f3;
+    logic               p1, p2, p3;
 
     logic [DATA_WIDTH-1:0] mem_dout_a;
     logic [DATA_WIDTH-1:0] mem_din_b;
@@ -52,23 +54,28 @@ module lif #(
             v1 <= 0; v2 <= 0; v3 <= 0;
             t1 <= '0; t2 <= '0; t3 <= '0;
             f1 <= '0; f2 <= '0; f3 <= '0;
+            p1 <= '0; p2 <= '0; p3 <= '0;
             out_valid <= 0;
         end else begin
             v1 <= in_req;
             t1 <= in_t;
-            f1 <= in_f;
+            f1 <= in_f[F_WIDTH-1:0];
+            p1 <= in_f[F_WIDTH];
 
             v2 <= v1;
             t2 <= t1;
             f2 <= f1;
+            p2 <= p1;
 
             v3 <= v2;
             t3 <= t2;
             f3 <= f2;
+            p3 <= p2;
             
             out_valid <= v3 && calc_fire;
             out_t     <= t3;
             out_f     <= f3;
+            out_p     <= p3;
         end
     end
 

@@ -15,7 +15,7 @@ module gcnn_top #(
     output logic                      is_ready,
     output logic                      out_valid,
     output logic [PRECISION_GEN-1 :0] out_conf,
-    output logic [PRECISION_GEN-1 :0] out_cls [CLS_NUM-1:0]
+    output logic [(PRECISION_GEN*CLS_NUM)-1 :0] out_cls
 
 //    output event_type                   event_test,
 //    output edge_type [MAX_EDGES-1:0]    edges_test,
@@ -304,14 +304,25 @@ module gcnn_top #(
          .out_valid    ( head_valid       )
       );
 
+    logic [(PRECISION_GEN)-1 :0] out_cls_reg [CLS_NUM-1:0];
+
      gru_head u_head (
          .clk         ( clk              ),
          .reset       ( reset            ),
          .in_valid    ( head_valid       ),
          .in_features ( features_to_head ),
          .out_conf    ( out_conf         ),
-         .out_cls     ( out_cls          ),
+         .out_cls     ( out_cls_reg      ),
          .out_valid   ( out_valid        )
       );
+
+
+    genvar i;
+    generate begin
+        for(i = 0; i< CLS_NUM; i++) begin  : assign_out
+            assign out_cls[((i+1)*PRECISION_GEN)-1 : (i*PRECISION_GEN)] = out_cls_reg[i];
+        end
+    end
+    endgenerate
 
 endmodule : gcnn_top

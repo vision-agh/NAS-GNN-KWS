@@ -16,7 +16,7 @@ entity timestamp_gen is
         AER_ACK    : out STD_LOGIC;
         
         out_t      : out STD_LOGIC_VECTOR(T_WIDTH-1 downto 0);
-        out_f      : out STD_LOGIC_VECTOR(F_WIDTH-1 downto 0);
+        out_f      : out STD_LOGIC_VECTOR(F_WIDTH downto 0);
         out_valid  : out STD_LOGIC;
         
         -- last_time removed

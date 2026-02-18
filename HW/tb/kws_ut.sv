@@ -1,16 +1,15 @@
-`timescale 1ns / 1ps
+`timescale 1ps / 1ps
 
 import nas_pkg::*;
 
 module kws_ut;
 
-    parameter INPUT_PATH = "/home/pwz/Downloads/20260204_231115_job12165103_task2_x1002c4s5b1n0/debug_outputs/filtered_events.txt";
+    parameter INPUT_PATH = "/home/pwz/Downloads/20260204_231115_job12165103_task2_x1002c4s5b1n0/debug_outputs/input_events.txt";
     parameter OUTPUT_PATH = "/home/pwz/Repo/SW/CONV2.txt";
-    parameter NS_PER_CLK = 5; // 250MHz is 4 clk every ns
-    parameter TIME_WINDOW = 10000000; // We test only single time window
+    parameter TIME_WINDOW = 10000; // We test only single time window
 
     logic [T_WIDTH-1:0] t;
-    logic [F_WIDTH-1:0] f;
+    logic [F_WIDTH:0]   f;
     logic               p;
     logic is_valid;
     logic [15:0]        idx_time = 0;
@@ -27,7 +26,8 @@ module kws_ut;
     logic [F_WIDTH-1:0] f_feature_reg;
     logic               p_feature_reg;
 
-    logic clk;
+    logic clock_200;
+    logic clock_48;
     logic rst;
 
     // Queues with values from file
@@ -45,7 +45,7 @@ module kws_ut;
     int            file;
     int            file_out;
     string         line;
-    int            current_time_ns = 8000000;
+    int            current_time = 0;
     string         t_string;
     string         f_string;
     string         p_string;
@@ -75,15 +75,22 @@ module kws_ut;
         p_feature_reg = p_coords.pop_front();
 
         while(1) begin
-            if (cnt<10) begin
+            if (cnt<100) begin
                 rst <= 1'b1;
                 cnt = cnt + 1;
             end
             else begin
                 rst <= 1'b0;
             end
-            #1 clk <= 1'b0;
-            #1 clk <= 1'b1;
+            #2500 clock_200 <= 1'b0;
+            #2500 clock_200 <= 1'b1;
+        end
+    end
+
+    initial begin
+        while(1) begin
+            #10417 clock_48 <= 1'b0;
+            #10417 clock_48 <= 1'b1;
         end
     end
 
@@ -91,43 +98,37 @@ module kws_ut;
     logic get_next = 1;
     int iter = 1;
     logic [31:0] last_t = 0;
-    always @(posedge clk) begin
+    int cnt_48 = 0;
+    
+    
+    always @(posedge clock_48) begin
         if (!rst) begin
-            
-            // Caluclate simulation time
-            current_time_ns = current_time_ns + NS_PER_CLK;
+            cnt_48 <= cnt_48+1;
+            if (cnt_48 == 47) begin
+                current_time = current_time + 1;
+                cnt_48 <= '0;
+            end
+        end
+    end
 
+    always @(posedge clock_48) begin
+        if (!rst) begin
+            is_valid <= 0;
             // Put values on input whenever the timestamp is smaller than simultation time
-            if (t_feature_reg * 1000 <= current_time_ns) begin
-                f_fifo.push_back(f_feature_reg);
-                t_fifo.push_back(t_feature_reg);
-                p_fifo.push_back(p_feature_reg);
-                last_t = t_feature_reg;
+            if (t_feature_reg <= current_time) begin
+                is_valid <= 1;
+                f[F_WIDTH] <= p_feature_reg;
+                f[F_WIDTH-1:0] <= f_feature_reg;
+                t <= t_feature_reg;
                 t_feature_reg <= t_coords.pop_front();
                 f_feature_reg <= f_coords.pop_front();
                 p_feature_reg <= p_coords.pop_front();
             end
-            if (current_time_ns >= iter*TIME_WINDOW) begin
+            if (current_time >= iter*TIME_WINDOW) begin
                 idx_time <= idx_time+1;
-                iter <= iter+1;
-                if (last_t > ((iter-1)*(TIME_WINDOW/1000))) begin
-                    last_time <= last_t;
-                end
-                else begin
-                    last_time <= '0;
-                end            
+                iter <= iter+1;           
             end
- 
-            if (f_fifo.size() != 0 && is_ready && !is_valid) begin
-                is_valid <= 1;
-                t <= t_fifo.pop_front();
-                f <= f_fifo.pop_front();
-                p <= p_fifo.pop_front();
-                get_next <= '0;
-            end
-            else begin
-                is_valid <= 0;
-            end
+
  
             // Write outputs to file
             if (event_test.valid) begin
@@ -138,27 +139,24 @@ module kws_ut;
             end
 
             // Finish simulation after 50.1 ms
-            if (current_time_ns > 80000000) begin
+            if (current_time > 80000) begin
                 $fclose(file_out);
                 $finish;
             end
         end
     end
 
-
-    gcnn_top uut (
-        .clk(clk),
-        .reset(rst),
-        .last_time(last_time),
+    KWS uut (
+        .clock_200(clock_200),
+        .clock_48(clock_48),
+        .rst_ext(rst),
         .idx_time(idx_time),
-        .t(t),
-        .f(f),
-        .p(p),
-        .is_valid(is_valid),
-        .is_ready(is_ready),
-        .out_valid(out_valid),
-        .out_conf(out_conf),
-        .out_cls()
+        .in_t(t),
+        .in_f(f),
+        .in_valid(is_valid),
+        .cnn_valid(),
+        .cnn_conf(),
+        .cnn_class()
     );
 
 endmodule
