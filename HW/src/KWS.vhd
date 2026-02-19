@@ -122,7 +122,8 @@ architecture Behavioral of KWS is
     signal src_rcv      : std_logic;
     signal dest_req     : std_logic;
     signal prev_idx_48  : std_logic_vector(15 downto 0) := (others => '0');
-
+    signal initial_sync_done : std_logic := '0';
+    
 begin
 
     lif_inst : lif
@@ -152,17 +153,19 @@ begin
 
     cdc_src_in <= lif_last_time_48 & lif_idx_time_48;
 
-    process(clock_48, rst_ext)
+process(clock_48, rst_ext)
     begin
         if rst_ext = '1' then
-            src_send <= '0';
-            prev_idx_48 <= (others => '0');
+            src_send          <= '0';
+            prev_idx_48       <= (others => '0');
+            initial_sync_done <= '0';
         elsif rising_edge(clock_48) then
             src_send <= '0';
             if src_rcv = '0' then
-                if lif_idx_time_48 /= prev_idx_48 then
-                    src_send <= '1';
-                    prev_idx_48 <= lif_idx_time_48;
+                if (lif_idx_time_48 /= prev_idx_48) or (initial_sync_done = '0') then
+                    src_send          <= '1';
+                    prev_idx_48       <= lif_idx_time_48;
+                    initial_sync_done <= '1';
                 end if;
             end if;
         end if;
