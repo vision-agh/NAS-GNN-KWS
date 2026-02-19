@@ -2,6 +2,9 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
+Library xpm;
+use xpm.vcomponents.all;
+
 entity KWS is
     Generic (   
         T_WIDTH     : INTEGER := 32;
@@ -17,13 +20,11 @@ entity KWS is
         clock_48     : in std_logic;
         rst_ext      : in std_logic;
 
-        -- Input Interface
         in_t         : in STD_LOGIC_VECTOR(T_WIDTH-1  downto 0);
         in_f         : in STD_LOGIC_VECTOR(F_WIDTH downto 0);
         in_valid     : in STD_LOGIC;
         idx_time     : in STD_LOGIC_VECTOR(15 downto 0);
 
-        -- GCNN Output
         cnn_valid    : out STD_LOGIC;
         cnn_conf     : out STD_LOGIC_VECTOR(PRECISION_GEN-1 downto 0);
         cnn_class    : out STD_LOGIC_VECTOR((PRECISION_GEN*CLS_NUM)-1 downto 0)
@@ -32,7 +33,6 @@ end KWS;
 
 architecture Behavioral of KWS is
 
-    -- 1. LIF Filter
     COMPONENT lif
         GENERIC (
             T_WIDTH     : integer;
@@ -59,7 +59,6 @@ architecture Behavioral of KWS is
         );
     END COMPONENT;
 
-    -- 2. FIFO 48Mhz -> 200Mhz
     COMPONENT fifo_generator_ok
       PORT (
         srst        : IN STD_LOGIC;
@@ -76,7 +75,6 @@ architecture Behavioral of KWS is
       );
     END COMPONENT;
 
-    -- 3. GCNN top
     COMPONENT gcnn_top
         PORT (
             clk         : in std_logic;
@@ -115,15 +113,15 @@ architecture Behavioral of KWS is
     signal f_r            : std_logic_vector(F_WIDTH-1 downto 0);
     signal p_r            : std_logic;
     
-    -- CDC Signals
-    signal toggle_48      : std_logic := '0';
-    signal prev_idx_48    : std_logic_vector(15 downto 0) := (others => '0');
-    signal toggle_200_m   : std_logic := '0';
-    signal toggle_200     : std_logic := '0';
-    signal toggle_200_d   : std_logic := '0';
-    
     signal synced_last_time : std_logic_vector(T_WIDTH-1 downto 0); 
     signal synced_idx_time  : std_logic_vector(15 downto 0);
+
+    signal cdc_src_in   : std_logic_vector(T_WIDTH + 15 downto 0);
+    signal cdc_dest_out : std_logic_vector(T_WIDTH + 15 downto 0);
+    signal src_send     : std_logic := '0';
+    signal src_rcv      : std_logic;
+    signal dest_req     : std_logic;
+    signal prev_idx_48  : std_logic_vector(15 downto 0) := (others => '0');
 
 begin
 
@@ -152,35 +150,50 @@ begin
         idx_time_out  => lif_idx_time_48
     );
 
+    cdc_src_in <= lif_last_time_48 & lif_idx_time_48;
+
     process(clock_48, rst_ext)
     begin
         if rst_ext = '1' then
-            toggle_48 <= '0';
+            src_send <= '0';
             prev_idx_48 <= (others => '0');
         elsif rising_edge(clock_48) then
-            if lif_idx_time_48 /= prev_idx_48 then
-                toggle_48 <= not toggle_48;
-                prev_idx_48 <= lif_idx_time_48;
+            src_send <= '0';
+            if src_rcv = '0' then
+                if lif_idx_time_48 /= prev_idx_48 then
+                    src_send <= '1';
+                    prev_idx_48 <= lif_idx_time_48;
+                end if;
             end if;
         end if;
     end process;
 
-    process(clock_200, rst_ext)
+    xpm_cdc_handshake_inst : xpm_cdc_handshake
+    generic map (
+        DEST_EXT_HSK   => 0,
+        DEST_SYNC_FF   => 4,
+        INIT_SYNC_FF   => 0,
+        SIM_ASSERT_CHK => 0,
+        SRC_SYNC_FF    => 4,
+        WIDTH          => T_WIDTH + 16
+    )
+    port map (
+        src_clk  => clock_48,
+        src_in   => cdc_src_in,
+        src_send => src_send,
+        src_rcv  => src_rcv,
+        dest_clk => clock_200,
+        dest_out => cdc_dest_out,
+        dest_req => dest_req,
+        dest_ack => '0'
+    );
+
+    process(clock_200)
     begin
-        if rst_ext = '1' then
-            toggle_200_m <= '0';
-            toggle_200   <= '0';
-            toggle_200_d <= '0';
-            synced_last_time <= (others => '0');
-            synced_idx_time  <= (others => '0');
-        elsif rising_edge(clock_200) then
-            toggle_200_m <= toggle_48;
-            toggle_200   <= toggle_200_m;
-            toggle_200_d <= toggle_200;
-            
-            if toggle_200 /= toggle_200_d then
-                synced_last_time <= lif_last_time_48;
-                synced_idx_time  <= lif_idx_time_48;
+        if rising_edge(clock_200) then
+            if dest_req = '1' then
+                synced_last_time <= cdc_dest_out(T_WIDTH + 15 downto 16);
+                synced_idx_time  <= cdc_dest_out(15 downto 0);
             end if;
         end if;
     end process;
