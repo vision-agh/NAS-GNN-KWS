@@ -23,6 +23,8 @@ module add_vectors_rescale #(
     end
 
     logic signed [63:0] product;
+    logic signed [63:0] product_one;
+    logic signed [63:0] product_two;
     logic               product_reg;
     logic signed [PRECISION:0]   input_reg_1 [DIM-1:0];
     logic signed [PRECISION:0]   input_reg_2 [DIM-1:0];
@@ -69,9 +71,12 @@ module add_vectors_rescale #(
         end
     end
 
+    assign product_one = $signed(input_reg_1[counter] - ZERO_POINT_IN_1) * $signed(MULTIPLIER_IN_1);
+    assign product_two = $signed(input_reg_2[counter] - ZERO_POINT_IN_2) * $signed(MULTIPLIER_IN_2);   
+    
+
     always @(posedge clk) begin
-        product <=  state ? $signed(input_reg_1[counter] - ZERO_POINT_IN_1) * $signed(MULTIPLIER_IN_1) +
-                        $signed(input_reg_2[counter] - ZERO_POINT_IN_2) * $signed(MULTIPLIER_IN_2) : '0;
+        product <=  state ? $signed(product_one + product_two) : '0;
         product_reg <= product[31];
         debug_mul <= state_reg ? (product) >>> 32 : '0;
         temp_sum <= state_reg2 ? (debug_mul[PRECISION-1:0] + ZERO_POINT_OUT) + product_reg: '0;
