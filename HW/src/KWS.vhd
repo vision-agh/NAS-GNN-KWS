@@ -243,9 +243,9 @@ begin
             valid_r <= rd_en_d1;
             
             if rd_en_d1 = '1' then
-                f_r <= dout(F_WIDTH downto 1);
+                f_r <= dout(F_WIDTH+1 downto 2);
                 t_r <= dout(39 downto F_WIDTH+2);
-                p_r <= dout(F_WIDTH+1);
+                p_r <= dout(1);
             end if;
             
             rd_en_d1 := rd_en;

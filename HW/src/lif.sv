@@ -168,7 +168,7 @@ module lif #(
             end
 
             if (idx_time_in != prev_idx_time) begin
-                idx_time_out <= prev_idx_time; 
+                idx_time_out <= idx_time_in; 
                 
                 if (event_seen_in_window) begin
                     last_time_out <= current_window_last_ts;
