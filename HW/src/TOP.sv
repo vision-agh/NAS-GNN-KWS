@@ -24,7 +24,7 @@ module NAS_KWS_TOP (
 
     logic [T_WIDTH-1:0] link_t;
     logic [15:0] idx_time_link;
-    logic [F_WIDTH-1:0] link_f;
+    logic [F_WIDTH:0] link_f;
     logic               link_valid;
     
 
@@ -37,9 +37,9 @@ module NAS_KWS_TOP (
         .i2s_d_in     (i2s_d_in),
         .i2s_lr       (i2s_lr),
         // AER Output
-        .AER_DATA_OUT (aer_data),
-        .AER_REQ      (aer_req),
-        .AER_ACK      (aer_ack)
+           (* MARK_DEBUG="true" *).AER_DATA_OUT (aer_data),
+           (* MARK_DEBUG="true" *).AER_REQ      (aer_req),
+           (* MARK_DEBUG="true" *).AER_ACK      (aer_ack)
     );
 
     // 48 MHZ domain
@@ -54,10 +54,10 @@ module NAS_KWS_TOP (
         .AER_REQ   (aer_req),
         .AER_ACK   (aer_ack),
         // Output to KWS
-        .out_t     (link_t),
-        .out_f     (link_f),
-        .out_valid (link_valid),
-        .idx_time (idx_time_link)
+           (* MARK_DEBUG="true" *).out_t     (link_t),
+           (* MARK_DEBUG="true" *) .out_f     (link_f),
+           (* MARK_DEBUG="true" *).out_valid (link_valid),
+           (* MARK_DEBUG="true" *).idx_time (idx_time_link)
     );
 
     KWS #(

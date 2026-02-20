@@ -6,7 +6,7 @@ module gru_head #(
     parameter int PRECISION            = 8,
     parameter int CLS_NUM              = 11,
     parameter int HEAD_DIM             = 72,
-    parameter string INIT_PATH         = "/home/pwz/Repo/NEW_IMPL/NAS-GNN-KWS/HW/mem/head.mem"
+    parameter string INIT_PATH         = "C:/Users/wikto/NAS-GNN-KWS_OPT/HW/mem/head.mem"
 )(
     input logic clk,
     input logic reset,

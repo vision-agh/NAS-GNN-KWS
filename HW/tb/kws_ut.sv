@@ -4,8 +4,8 @@ import nas_pkg::*;
 
 module kws_ut;
 
-    parameter INPUT_PATH = "/home/pwz/Downloads/20260204_231115_job12165103_task2_x1002c4s5b1n0/debug_outputs/input_events.txt";
-    parameter OUTPUT_PATH = "/home/pwz/Repo/SW/CONV2.txt";
+    parameter INPUT_PATH = "C:/Users/wikto/Downloads/input_events.txt";
+    parameter OUTPUT_PATH = "C:/Users/wikto/NAS-GNN-KWS_OPT/SW/CONV2.txt";
     parameter TIME_WINDOW = 10000; // We test only single time window
 
     logic [T_WIDTH-1:0] t;
@@ -25,7 +25,9 @@ module kws_ut;
     logic [T_WIDTH-1:0] t_feature_reg;
     logic [F_WIDTH-1:0] f_feature_reg;
     logic               p_feature_reg;
-
+    logic [PRECISION_GEN-1 :0] out_conf_r;
+    logic [(PRECISION_GEN*CLS_NUM)-1 :0] out_cls_r;
+    logic out_valid_r;
     logic clock_200;
     logic clock_48;
     logic rst;
@@ -154,9 +156,9 @@ module kws_ut;
         .in_t(t),
         .in_f(f),
         .in_valid(is_valid),
-        .cnn_valid(),
-        .cnn_conf(),
-        .cnn_class()
+        .cnn_valid(out_valid_r),
+        .cnn_conf(out_conf_r),
+        .cnn_class(out_cls_r)
     );
 
 endmodule

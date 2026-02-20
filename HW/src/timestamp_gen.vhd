@@ -40,7 +40,14 @@ architecture Behavioral of timestamp_gen is
     
     signal cnt_10ms       : integer range 0 to CYCLES_10MS := 0;
     signal window_idx_counter : unsigned(15 downto 0) := (others => '0');
+    
+    attribute MARK_DEBUG : string;
 
+    attribute MARK_DEBUG of out_t: signal is "TRUE";
+    attribute MARK_DEBUG of out_f: signal is "TRUE";
+    attribute MARK_DEBUG of window_idx_counter: signal is "TRUE";
+    attribute MARK_DEBUG of out_valid: signal is "TRUE";
+    
 begin
 
     ts: process(clk, rst)
@@ -84,7 +91,6 @@ begin
             if req_falling = '1' then
                 out_t <= std_logic_vector(t_counter);
                 out_f(6 downto 0) <= AER_DATA;
-                out_f(F_WIDTH-1 downto 7) <= (others => '0'); 
                 out_valid <= '1';
             end if;
         end if;
@@ -103,7 +109,7 @@ begin
             if cnt_10ms = CYCLES_10MS - 1 then
                 cnt_10ms <= 0;
                 window_idx_counter <= window_idx_counter + 1;
-                idx_time <= std_logic_vector(window_idx_counter);
+                idx_time <= std_logic_vector(window_idx_counter + 1);
             else
                 cnt_10ms <= cnt_10ms + 1;
             end if;

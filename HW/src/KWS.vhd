@@ -124,6 +124,24 @@ architecture Behavioral of KWS is
     signal prev_idx_48  : std_logic_vector(15 downto 0) := (others => '0');
     signal initial_sync_done : std_logic := '0';
     
+    attribute MARK_DEBUG : string;
+
+    attribute MARK_DEBUG of lif_idx_time_48: signal is "TRUE";
+    attribute MARK_DEBUG of lif_last_time_48: signal is "TRUE";
+    attribute MARK_DEBUG of synced_last_time: signal is "TRUE";
+    attribute MARK_DEBUG of synced_idx_time: signal is "TRUE";
+    attribute MARK_DEBUG of lif_out_t: signal is "TRUE";
+    attribute MARK_DEBUG of lif_out_f: signal is "TRUE";
+    attribute MARK_DEBUG of lif_out_p: signal is "TRUE";
+    
+    attribute MARK_DEBUG of t_r: signal is "TRUE";
+    attribute MARK_DEBUG of f_r: signal is "TRUE";
+    attribute MARK_DEBUG of p_r: signal is "TRUE";
+        
+    attribute MARK_DEBUG of valid_r: signal is "TRUE";
+    attribute MARK_DEBUG of ready_r: signal is "TRUE";
+    attribute MARK_DEBUG of lif_out_valid: signal is "TRUE";
+    
 begin
 
     lif_inst : lif
@@ -248,7 +266,7 @@ process(clock_48, rst_ext)
             if rd_en_d1 = '1' then
                 f_r <= dout(F_WIDTH+1 downto 2);
                 t_r <= dout(39 downto F_WIDTH+2);
-                p_r <= dout(1);
+                p_r <= not dout(1);
             end if;
             
             rd_en_d1 := rd_en;

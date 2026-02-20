@@ -22,7 +22,7 @@ module gcnn_top #(
 //    output logic [PRECISION_GEN-1:0]    features_test [OUTPUT_DIM_1-1 : 0]
 );
 
-    localparam string MEMORY_DIR_PATH = "/home/pwz/Repo/NEW_IMPL/NAS-GNN-KWS/HW/mem/";
+    localparam string MEMORY_DIR_PATH = "C:/Users/wikto/NAS-GNN-KWS_OPT/HW/mem/";
     localparam string INIT_PATH_CONV1 = {MEMORY_DIR_PATH, "conv1.mem"};
     localparam string INIT_PATH_CONV2_W = {MEMORY_DIR_PATH, "conv2_w.mem"};
     localparam string INIT_PATH_CONV2_B = {MEMORY_DIR_PATH, "conv2_b.mem"};

@@ -59,8 +59,8 @@ module lif #(
         end else begin
             v1 <= in_req;
             t1 <= in_t;
-            f1 <= in_f[F_WIDTH-1:0];
-            p1 <= in_f[F_WIDTH];
+            f1 <= in_f[F_WIDTH:1];
+            p1 <= in_f[0];
 
             v2 <= v1;
             t2 <= t1;
