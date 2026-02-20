@@ -341,7 +341,7 @@ def main():
                         help="Path to the run folder that contains config.yaml and checkpoints/")
     parser.add_argument("--split", type=str, default="test", choices=["test", "val", "train"],
                         help="Which split to evaluate.")
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--num_workers", type=int, default=8)
     parser.add_argument("--pin_memory", action="store_true")
     parser.add_argument("--seed", type=int, default=42)
@@ -370,7 +370,7 @@ def main():
     print(OmegaConf.to_yaml(cfg))
 
     # ---- dataset root
-    dataset_root = Path.home() / "Datasets" / "NAS_GSC" / "dataset_aedat_w_delays_whole"
+    dataset_root = Path.home() / "Datasets" / "NAS_GSC" / "dataset_aedat_w_delays_parallel"
     train_files, val_files, test_files = build_splits(dataset_root)
     print(f"Split sizes | Train: {len(train_files)} | Val: {len(val_files)} | Test: {len(test_files)}")
 

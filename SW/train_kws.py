@@ -32,8 +32,8 @@ EPOCHS = 50
 EPOCHS_CALIBRATION = 5
 SGD_MOMENTUM = 0.9
 
-BATCH_SIZE = 16
-NUM_WORKERS = 8
+BATCH_SIZE = 2
+NUM_WORKERS = 2
 PIN_MEMORY = True
 
 mp.set_start_method('fork', force=True)
@@ -343,7 +343,7 @@ def _timestamp_accuracy(
     pred_cls_btC = cls_logits.permute(0, 2, 1)
     idx = torch.arange(B, device=dev)
 
-    pred_lbl = pred_cls_btC[idx, gt_ts].argmax(dim=-1)
+    pred_lbl = pred_cls_btC[idx, pred_ts].argmax(dim=-1)
     gt_lbl = gt_cls_idx[idx, gt_ts].long()
 
     time_ok = (pred_ts - gt_ts).abs() <= tolerance
@@ -364,7 +364,8 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
     total_loss_cls = 0.0
     total_loss = 0.0
 
-    total_ts_acc = 0.0
+    total_ts_acc_1 = 0.0
+    total_ts_acc_3 = 0.0
     total_acc = 0.0
 
     total_dt_abs_steps = 0.0
@@ -412,8 +413,12 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
 
         loss = loss_conf + loss_cls
 
-        ts_acc, acc = _timestamp_accuracy(
-            conf_logits, cls_logits, batch["conf_vec"], batch["cls_vec"]
+        ts_acc_1, acc = _timestamp_accuracy(
+            conf_logits, cls_logits, batch["conf_vec"], batch["cls_vec"], tolerance=1
+        )
+
+        ts_acc_3, _ = _timestamp_accuracy(
+            conf_logits, cls_logits, batch["conf_vec"], batch["cls_vec"], tolerance=3
         )
 
         mean_abs_dt_steps, mean_signed_dt_steps = _timestamp_errors(
@@ -432,7 +437,8 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
         total_loss += loss.item() * B
         total_loss_conf += loss_conf.item() * B
         total_loss_cls += loss_cls.item() * B
-        total_ts_acc += ts_acc.item() * B
+        total_ts_acc_1 += ts_acc_1.item() * B
+        total_ts_acc_3 += ts_acc_3.item() * B
         total_acc += acc.item() * B
 
         total_dt_abs_steps += mean_abs_dt_steps.item() * B
@@ -449,14 +455,14 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
         "avg_loss": total_loss / total,
         "avg_loss_conf": total_loss_conf / total,
         "avg_loss_cls": total_loss_cls / total,
-        "ts_accuracy": total_ts_acc / total,
+        "ts_accuracy_1": total_ts_acc_1 / total,
+        "ts_accuracy_3": total_ts_acc_3 / total,
         "accuracy": total_acc / total,
         "mean_abs_dt_steps": total_dt_abs_steps / total,
         "mean_signed_dt_steps": total_dt_signed_steps / total,
         "mean_abs_dt_ms": total_dt_abs_ms / total,
         "mean_signed_dt_ms": total_dt_signed_ms / total,
     }
-
 
 # -------------------------------------------------
 # 9. Output folder
