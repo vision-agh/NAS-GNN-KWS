@@ -27,6 +27,7 @@ module edges_gen #(
 
     // Memory interface signals
     logic [AWIDTH-1:0] addra, addrb;
+    logic [AWIDTH : 0] addrc;
     logic [DWIDTH-1:0] din, dout;
     logic en, we;
 
@@ -58,8 +59,9 @@ module edges_gen #(
 
     // [Read] Logic on counter (memory_in)
     assign en  = (counter < MAX_EDGES) && condition && state==GGEN ? 1'b1 : 1'b0;
-    assign addra = (counter <= F_RADIUS) ? in_event.f + counter*SKIP_STEP : in_event.f - ((counter-F_RADIUS)*SKIP_STEP);
-    assign condition = (addra >= 0) && (addra < NUM_CHANNEL);
+    assign addrc = (counter <= F_RADIUS) ? in_event.f + counter*SKIP_STEP : in_event.f - ((counter-F_RADIUS)*SKIP_STEP);
+    assign condition = (addrc >= 0) && (addrc < NUM_CHANNEL);
+    assign addra = addrc[AWIDTH-1:0];
 
     // [Write] Logic on counter (memory_in)
     assign we  = (counter == MAX_EDGES-1) && state==GGEN;
