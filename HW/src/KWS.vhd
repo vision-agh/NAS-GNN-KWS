@@ -123,7 +123,8 @@ architecture Behavioral of KWS is
     signal dest_req     : std_logic;
     signal prev_idx_48  : std_logic_vector(15 downto 0) := (others => '0');
     signal initial_sync_done : std_logic := '0';
-    
+    signal rd_en_d1 : std_logic := '0';
+
     attribute MARK_DEBUG : string;
 
     attribute MARK_DEBUG of lif_idx_time_48: signal is "TRUE";
@@ -141,6 +142,9 @@ architecture Behavioral of KWS is
     attribute MARK_DEBUG of valid_r: signal is "TRUE";
     attribute MARK_DEBUG of ready_r: signal is "TRUE";
     attribute MARK_DEBUG of lif_out_valid: signal is "TRUE";
+    
+    attribute MARK_DEBUG of full: signal is "TRUE";
+    attribute MARK_DEBUG of empty: signal is "TRUE";
     
 begin
 
@@ -237,39 +241,36 @@ process(clock_48, rst_ext)
         rd_rst_busy => open
     );
 
-    rd: process(clock_200, rst_ext)
+rd: process(clock_200, rst_ext)
     begin
         if rst_ext = '1' then
             rd_en <= '0';
         elsif rising_edge(clock_200) then
-            rd_en <= '0';
-            if empty = '0' then
-                if ready_r = '1' then
-                    rd_en <= '1';
-                end if;
+            if empty = '0' and ready_r = '1' and rd_en = '0' and rd_en_d1 = '0' and valid_r = '0' then
+                rd_en <= '1';
+            else
+                rd_en <= '0';
             end if;
         end if;
     end process;
     
-    unpack: process(clock_200, rst_ext)
-        variable rd_en_d1 : std_logic := '0';
+unpack: process(clock_200, rst_ext)
     begin
         if rst_ext = '1' then
             valid_r <= '0';
             t_r     <= (others => '0');
             f_r     <= (others => '0');
             p_r     <= '0'; 
-            rd_en_d1 := '0';
+            rd_en_d1 <= '0';
         elsif rising_edge(clock_200) then
-            valid_r <= rd_en_d1;
+            rd_en_d1 <= rd_en;
+            valid_r  <= rd_en_d1;
             
             if rd_en_d1 = '1' then
                 f_r <= dout(F_WIDTH+1 downto 2);
                 t_r <= dout(39 downto F_WIDTH+2);
                 p_r <= not dout(1);
             end if;
-            
-            rd_en_d1 := rd_en;
         end if;
     end process;
 
