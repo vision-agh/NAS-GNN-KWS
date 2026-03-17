@@ -22,7 +22,7 @@ module gcnn_top #(
 //    output logic [PRECISION_GEN-1:0]    features_test [OUTPUT_DIM_1-1 : 0]
 );
 
-    localparam string MEMORY_DIR_PATH = "C:/Users/wikto/NAS-GNN-KWS_OPT/HW/mem/";
+    localparam string MEMORY_DIR_PATH = "/home/pwz/Repo/NEW_IMPL/NAS-GNN-KWS/HW/mem/";
     localparam string INIT_PATH_CONV1 = {MEMORY_DIR_PATH, "conv1.mem"};
     localparam string INIT_PATH_CONV2_W = {MEMORY_DIR_PATH, "conv2_w.mem"};
     localparam string INIT_PATH_CONV2_B = {MEMORY_DIR_PATH, "conv2_b.mem"};
@@ -31,33 +31,33 @@ module gcnn_top #(
     localparam string INIT_PATH_CONV4_W = {MEMORY_DIR_PATH, "conv4_w.mem"};
     localparam string INIT_PATH_CONV4_B = {MEMORY_DIR_PATH, "conv4_b.mem"};
 
-    localparam CONV1_MULTIPLIER_DIFF_T = 73070576;
-    localparam CONV1_MULTIPLIER_OUT = 47337484;
-    localparam CONV1_ZERO_POINT_IN = 85;
-    localparam CONV1_ZERO_POINT_OUT = 154;
-    localparam CONV1_ZERO_POINT_WEIGHT = 177;      
-    localparam logic [7:0] CONV1_SCALE_IN [20:0] = {0,8,17,25,34,42,51,59,68,76,170,162,153,145,136,128,119,111,102,94,85};
+    localparam CONV1_MULTIPLIER_DIFF_T = 84884488;
+    localparam CONV1_MULTIPLIER_OUT = 36650108;
+    localparam CONV1_ZERO_POINT_IN = 99;
+    localparam CONV1_ZERO_POINT_OUT = 157;
+    localparam CONV1_ZERO_POINT_WEIGHT = 151;      
+    localparam logic [7:0] CONV1_SCALE_IN [10:0] = {0, 20, 40, 59, 79, 198, 178, 158, 139, 119, 99};
 
-    localparam CONV2_MULTIPLIER_DIFF_T = 25842100;
-    localparam CONV2_MULTIPLIER_OUT = 77634224;
-    localparam CONV2_ZERO_POINT_IN = 154;
-    localparam CONV2_ZERO_POINT_OUT = 107;
-    localparam CONV2_ZERO_POINT_WEIGHT = 96;       
-    localparam logic [7:0] CONV2_SCALE_IN [20:0] = {124,127,130,133,136,139,142,145,148,151,184,181,178,175,172,169,166,163,160,157,154};
+    localparam CONV2_MULTIPLIER_DIFF_T = 20096254;
+    localparam CONV2_MULTIPLIER_OUT = 75262432;
+    localparam CONV2_ZERO_POINT_IN = 157;
+    localparam CONV2_ZERO_POINT_OUT = 124;
+    localparam CONV2_ZERO_POINT_WEIGHT = 97;       
+    localparam logic [7:0] CONV2_SCALE_IN [10:0] = {134,138,143,148,152,180,176,171,166,162,157};
 
-    localparam CONV3_MULTIPLIER_DIFF_T = 18817560;
-    localparam CONV3_MULTIPLIER_OUT = 40508052;
-    localparam CONV3_ZERO_POINT_IN = 107;
-    localparam CONV3_ZERO_POINT_OUT = 55;
-    localparam CONV3_ZERO_POINT_WEIGHT = 86;       
-    localparam logic [7:0] CONV3_SCALE_IN [20:0] = {85,87,89,92,94,96,98,100,103,105,129,127,125,122,120,118,116,114,111,109,107};
+    localparam CONV3_MULTIPLIER_DIFF_T = 23465478;
+    localparam CONV3_MULTIPLIER_OUT = 29568546;
+    localparam CONV3_ZERO_POINT_IN = 124;
+    localparam CONV3_ZERO_POINT_OUT = 72;
+    localparam CONV3_ZERO_POINT_WEIGHT = 87;       
+    localparam logic [7:0] CONV3_SCALE_IN [10:0] = {97, 102, 108, 113, 119, 151, 146, 140, 135, 129, 124};
 
-    localparam CONV4_MULTIPLIER_DIFF_T = 9043247;
-    localparam CONV4_MULTIPLIER_OUT = 31633292;
-    localparam CONV4_ZERO_POINT_IN = 55;
-    localparam CONV4_ZERO_POINT_OUT = 83;
-    localparam CONV4_ZERO_POINT_WEIGHT = 132;   
-    localparam logic [7:0] CONV4_SCALE_IN [20:0] = {44,46,47,48,49,50,51,52,53,54,66,64,63,62,61,60,59,58,57,56,55};
+    localparam CONV4_MULTIPLIER_DIFF_T = 9689040;
+    localparam CONV4_MULTIPLIER_OUT = 35077416;
+    localparam CONV4_ZERO_POINT_IN = 72;
+    localparam CONV4_ZERO_POINT_OUT = 114;
+    localparam CONV4_ZERO_POINT_WEIGHT = 130;   
+    localparam logic [7:0] CONV4_SCALE_IN [10:0] = {61, 63, 65, 67, 70, 83, 81, 79, 77, 74, 72};
 
     event_type                   event_to_conv1, event_to_conv2, event_to_conv3, event_to_conv4, event_to_pool;
     event_type                   event_to_buff1, event_to_buff2, event_to_buff3, event_to_buff4;

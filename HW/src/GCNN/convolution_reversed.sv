@@ -15,8 +15,7 @@ module convolution_sparse #(
     parameter int ZERO_POINT_WEIGHT          = 30075,
     parameter string INIT_PATH_W             = "???",
     parameter string INIT_PATH_B             = "???",
-    parameter logic [PRECISION_IN-1:0] SCALE_IN [20:0] = { 29490, 26214, 22937, 19660, 16383, 13107, 9830, 6553, 3277, 0, 65534,
-                                                             62257, 58981, 55704, 52427, 49150, 45874, 42597, 39320, 36044, 32767 }
+    parameter logic [PRECISION_IN-1:0] SCALE_IN [10:0] = { 29490, 26214, 22937, 19660, 16383, 13107, 9830, 6553, 3277, 0, 65534}
 )(
     input logic clk,
     input logic reset,

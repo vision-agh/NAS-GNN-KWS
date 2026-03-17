@@ -8,8 +8,8 @@ use xpm.vcomponents.all;
 entity KWS is
     Generic (   
         T_WIDTH     : INTEGER := 32;
-        F_WIDTH     : INTEGER := 6;
-        NUM_CHANNEL : integer := 64;
+        F_WIDTH     : INTEGER := 5;
+        NUM_CHANNEL : integer := 32;
         WEIGHT      : integer := 32;
         DECAY_SHIFT : integer := 8;
         PRECISION_GEN  : integer := 8 ;
@@ -64,10 +64,10 @@ architecture Behavioral of KWS is
         srst        : IN STD_LOGIC;
         wr_clk      : IN STD_LOGIC;
         rd_clk      : IN STD_LOGIC;
-        din         : IN STD_LOGIC_VECTOR(39 DOWNTO 0);
+        din         : IN STD_LOGIC_VECTOR(38 DOWNTO 0);
         wr_en       : IN STD_LOGIC;
         rd_en       : IN STD_LOGIC;
-        dout        : OUT STD_LOGIC_VECTOR(39 DOWNTO 0);
+        dout        : OUT STD_LOGIC_VECTOR(38 DOWNTO 0);
         full        : OUT STD_LOGIC;
         empty       : OUT STD_LOGIC;
         wr_rst_busy : OUT STD_LOGIC;
@@ -100,9 +100,9 @@ architecture Behavioral of KWS is
     signal lif_last_time_48 : std_logic_vector(T_WIDTH-1 downto 0);
     signal lif_idx_time_48  : std_logic_vector(15 downto 0);
 
-    signal fifo_din       : std_logic_vector(39 downto 0);
+    signal fifo_din       : std_logic_vector(38 downto 0);
     signal fifo_wr_en     : std_logic;
-    signal dout           : std_logic_vector(39 downto 0);
+    signal dout           : std_logic_vector(38 downto 0);
     signal empty          : std_logic;
     signal full           : std_logic;
     signal rd_en          : std_logic := '0';
@@ -268,7 +268,7 @@ unpack: process(clock_200, rst_ext)
             
             if rd_en_d1 = '1' then
                 f_r <= dout(F_WIDTH+1 downto 2);
-                t_r <= dout(39 downto F_WIDTH+2);
+                t_r <= dout(38 downto F_WIDTH+2);
                 p_r <= not dout(1);
             end if;
         end if;

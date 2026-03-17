@@ -4,12 +4,12 @@ import nas_pkg::*;
 
 module kws_ut;
 
-    parameter INPUT_PATH = "C:/Users/wikto/Downloads/input_events.txt";
-    parameter OUTPUT_PATH = "C:/Users/wikto/NAS-GNN-KWS_OPT/SW/CONV2.txt";
+    parameter INPUT_PATH = "/home/pwz/Music/debug_outputs/input_events.txt";
+    //parameter INPUT_PATH = "/home/pwz/Repo/NEW_IMPL/NAS-GNN-KWS/HW/tb/custom_events.txt";
     parameter TIME_WINDOW = 10000; // We test only single time window
 
     logic [T_WIDTH-1:0] t;
-    logic [F_WIDTH:0]   f;
+    logic [F_WIDTH:0] f;
     logic               p;
     logic is_valid;
     logic [15:0]        idx_time = 0;
@@ -54,7 +54,6 @@ module kws_ut;
 
     initial begin
         file = $fopen(INPUT_PATH, "r");
-        file_out = $fopen(OUTPUT_PATH, "w");
 
         while(!$feof(file)) begin
             $fgets(line, file);
@@ -63,10 +62,10 @@ module kws_ut;
             t_coords.push_back(t_string.atoi());
             f_coords.push_back(f_string.atoi());
             if (p_string == "1") begin
-                p_coords.push_back(1'b1);
+                p_coords.push_back(1'b0);
             end
             else begin
-                p_coords.push_back(1'b0);
+                p_coords.push_back(1'b1);
             end
         end
         $fclose(file);
@@ -119,8 +118,8 @@ module kws_ut;
             // Put values on input whenever the timestamp is smaller than simultation time
             if (t_feature_reg <= current_time) begin
                 is_valid <= 1;
-                f[F_WIDTH] <= p_feature_reg;
-                f[F_WIDTH-1:0] <= f_feature_reg;
+                f[0] <= p_feature_reg;
+                f[F_WIDTH:1] <= f_feature_reg;
                 t <= t_feature_reg;
                 t_feature_reg <= t_coords.pop_front();
                 f_feature_reg <= f_coords.pop_front();
@@ -132,19 +131,19 @@ module kws_ut;
             end
 
  
-            // Write outputs to file
-            if (event_test.valid) begin
-                for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
-                    $fwrite(file_out, "%0d, ", features_test[i]);
-                end
-                $fdisplay(file_out, "%0d", features_test[nas_pkg::OUTPUT_DIM_1-1]);
-            end
+//            // Write outputs to file
+//            if (event_test.valid) begin
+//                for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
+//                    $fwrite(file_out, "%0d, ", features_test[i]);
+//                end
+//                $fdisplay(file_out, "%0d", features_test[nas_pkg::OUTPUT_DIM_1-1]);
+//            end
 
-            // Finish simulation after 50.1 ms
-            if (current_time > 80000) begin
-                $fclose(file_out);
-                $finish;
-            end
+//            // Finish simulation after 50.1 ms
+//            if (current_time > 500000) begin
+//                $fclose(file_out);
+//                $finish;
+//            end
         end
     end
 

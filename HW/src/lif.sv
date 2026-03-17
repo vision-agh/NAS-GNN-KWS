@@ -3,7 +3,7 @@ import nas_pkg::*;
 
 module lif #(
     parameter int T_WIDTH     = 32,
-    parameter int F_WIDTH     = 7,
+    parameter int F_WIDTH     = 5,
     parameter int NUM_CHANNEL = 128,
     parameter int WEIGHT      = 32,
     parameter int DECAY_SHIFT = 8
@@ -88,8 +88,11 @@ module lif #(
     logic [31:0]        decay;
     logic [31:0]        pot_decayed;
     logic [31:0]        pot_integrated;
+    logic [31:0]        th_local;
     logic               fire_comb;
     logic [31:0]        pot_next_comb;
+
+    assign th_local = nas_pkg::thresholds[f2];
 
     always_comb begin
         last_time = mem_dout_a[DATA_WIDTH-1:32];
@@ -110,7 +113,7 @@ module lif #(
 
         pot_integrated = pot_decayed + WEIGHT;
 
-        if (pot_integrated >= nas_pkg::thresholds[f2]) begin
+        if (pot_integrated >= th_local) begin
             fire_comb     = 1'b1;
             pot_next_comb = 32'd0;
         end else begin
