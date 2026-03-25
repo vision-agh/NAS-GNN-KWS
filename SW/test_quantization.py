@@ -20,19 +20,22 @@ def move_to_device(batch, dev):
     }
 
 
+# Parallel 64 = '20260205_153506_job12193988_task0_x1002c2s6b1n0'
+# Parallel 32 = '20260216_225818_job12650489_task3_x1002c3s2b0n0'
+
 # Prepare dataset
 files = glob.glob(
-    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_whole/backward/0a2b400e_nohash_0.wav.aedat"
+    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_parallel_32ch/stop/cd85758f_nohash_2.wav*"
 )
 # cfg = build_config(model_cfg_path="configs/kws.yaml")
 
-cfg = OmegaConf.load('runs/kws/20260204_231115_job12165103_task2_x1002c4s5b1n0/config.yaml')
+cfg = OmegaConf.load('runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/config.yaml')
 OmegaConf.resolve(cfg)
 ds = SpikingDS(files, cfg)
 
 # Prepare model
 model = KWS(cfg).to('cuda')
-ckpt = torch.load('runs/kws/20260204_231115_job12165103_task2_x1002c4s5b1n0/checkpoints/best_model_calibration.pth')
+ckpt = torch.load('runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/checkpoints/best_model_calibration.pth')
 model.load_state_dict(ckpt)
 model.eval()
 
@@ -40,8 +43,8 @@ model.eval()
 model.quantize()
 
 # Create output directory for debug outputs
-path_debug = 'runs/kws/20260204_231115_job12165103_task2_x1002c4s5b1n0/debug_outputs/'
-path_parameters = 'runs/kws/20260204_231115_job12165103_task2_x1002c4s5b1n0/parameters/'
+path_debug = 'runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/debug_outputs/'
+path_parameters = 'runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/parameters/'
 os.makedirs(path_debug, exist_ok=True)
 os.makedirs(path_parameters, exist_ok=True)
 
@@ -66,5 +69,7 @@ for data in ds:
 
     with torch.no_grad():
         conf, cls = model(data)
+        print(conf)
+        print(cls)
 
     break

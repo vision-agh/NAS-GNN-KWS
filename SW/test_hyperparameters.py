@@ -100,7 +100,7 @@ persistent_workers = bool(NUM_WORKERS and NUM_WORKERS > 0)
 # -------------------------------------------------
 model = KWS(cfg).to(device)
 ckpt = torch.load('example_result/kws/20251225_002857_normalised/best_model_calibration.pth')
-model.load_state_dict(ckpt)
+# model.load_state_dict(ckpt)
 model.eval()
 model.quantize()
 

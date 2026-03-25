@@ -21,20 +21,21 @@ def move_to_device(batch, dev):
 
 # Prepare dataset
 files = glob.glob(
-    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_whole/*/*"    # or select class e.g. stop here
+    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_parallel_32ch/*/*"    # or select class e.g. stop here
 )
 
 # shuffle files for testing
 random.shuffle(files)
 
-cfg = OmegaConf.load('runs/kws/20260127_193651_job11896010_task2_x1002c3s3b1n0/config.yaml')
+cfg = OmegaConf.load('runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/config.yaml')
 OmegaConf.resolve(cfg)
+
 print(cfg)
 ds = SpikingDS(files, cfg)
 
 # Prepare model
 model = KWS(cfg).to('cuda')
-ckpt = torch.load('runs/kws/20260127_193651_job11896010_task2_x1002c3s3b1n0/checkpoints/best_model_calibration.pth')
+ckpt = torch.load('runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/checkpoints/best_model_calibration.pth')
 model.load_state_dict(ckpt)
 model.eval()
 
