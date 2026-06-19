@@ -4,7 +4,7 @@ This repository provides the end-to-end FPGA implementation of the keyword spott
 
 <div align="center">
   <img src="assets/diagram.png" width="1000px"/><br>
-    <p style="font-size:1.5vw;">TThe proposed architecture is illustrated with the sensor and filtering modules highlighted in green, the feature extraction stage in blue, and the MaxPool and network head modules in yellow. The scheduling mechanism is marked in purple, while the timestamp propagation mechanism is indicated in red.. </p>
+    <p style="font-size:1.5vw;">The proposed architecture is illustrated with the sensor and filtering modules highlighted in green, the feature extraction stage in blue, and the MaxPool and network head modules in yellow. The scheduling mechanism is marked in purple, while the timestamp propagation mechanism is indicated in red.. </p>
 </div>
 
 
