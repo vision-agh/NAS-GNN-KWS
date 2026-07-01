@@ -39,7 +39,10 @@ If you find this project useful in your research, please consider citing our wor
 @article{matykiewicz2026end,
   title={End-to-End Keyword Spotting on FPGA Using Graph Neural Networks with a Neuromorphic Auditory Sensor},
   author={Matykiewicz, Wiktor and Wzorek, Piotr and Jeziorek, Kamil and Muñoz, Tomás and Rios-Navarro, Antonio and Jiménez-Fernández, Angel and Kryjak, Tomasz},
-  journal={arXiv preprint arXiv:2605.09570},
+  booktitle="Applied Reconfigurable Computing. Architectures, Tools, and Applications",
+  publisher="Springer Nature Switzerland",
+  address="Cham",
+  pages="119--136",
   year={2026}
 }
 ```
