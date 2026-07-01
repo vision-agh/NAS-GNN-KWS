@@ -22,7 +22,6 @@ BATCH_SIZE = 4
 NUM_WORKERS = 4
 PIN_MEMORY = True
 
-
 # -------------------------------------------------
 # 1. Reproducibility
 # -------------------------------------------------
@@ -87,8 +86,6 @@ print(
 # -------------------------------------------------
 cfg = build_config(model_cfg_path="configs/kws.yaml")
 
-
-
 # -------------------------------------------------
 # 4. DataLoaders
 # -------------------------------------------------
@@ -103,7 +100,7 @@ persistent_workers = bool(NUM_WORKERS and NUM_WORKERS > 0)
 # -------------------------------------------------
 model = KWS(cfg).to(device)
 ckpt = torch.load('example_result/kws/20251225_002857_normalised/best_model_calibration.pth')
-model.load_state_dict(ckpt)
+# model.load_state_dict(ckpt)
 model.eval()
 model.quantize()
 

@@ -9,6 +9,7 @@ from pathlib import Path
 from configs.build_config import build_config
 from models.networks.kws import KWS
 from dataset.nas import WORDS_COMM
+from omegaconf import OmegaConf
 
 from utils.generate_outputs import gen_input_events, gen_graph_out, conv_gen_out, conv_first_gen_out, vector_out
 
@@ -20,17 +21,21 @@ def move_to_device(batch, dev):
 
 # Prepare dataset
 files = glob.glob(
-    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat/stop/*"    # or select class e.g. stop here
+    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_parallel_32ch/*/*"    # or select class e.g. stop here
 )
 
 # shuffle files for testing
 random.shuffle(files)
-cfg = build_config(model_cfg_path="configs/kws.yaml")
+
+cfg = OmegaConf.load('runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/config.yaml')
+OmegaConf.resolve(cfg)
+
+print(cfg)
 ds = SpikingDS(files, cfg)
 
 # Prepare model
 model = KWS(cfg).to('cuda')
-ckpt = torch.load('example_result/kws/20251225_002857_normalised/best_model_calibration.pth')
+ckpt = torch.load('runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/checkpoints/best_model_calibration.pth')
 model.load_state_dict(ckpt)
 model.eval()
 

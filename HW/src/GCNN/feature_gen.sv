@@ -8,16 +8,23 @@ module feature_gen #(
     parameter ZERO_POINT   = GEN_ZERO_POINT    
                             
 )(
-    input logic                      clk,
-    input logic                      reset,
-    input event_type                 in_event,
-    input edge_type   [MAX_EDGES-1:0] in_edges,
+    input logic                        clk,
+    input logic                        reset,
+    input event_type                   in_event,
+    input edge_type [MAX_EDGES-1:0]    in_edges,
+    input logic [$clog2(MAX_EDGES) :0] in_edge_cnt,
 
-    output event_type                         out_event,
-    output edge_type  [MAX_EDGES-1:0]         out_edges,
-    output logic      [PRECISION_GEN-1:0]     t_feature,
-    output logic      [PRECISION_GEN-1:0]     f_feature
+    output event_type                     out_event,
+    output edge_type  [MAX_EDGES-1:0]     out_edges,
+    output logic      [PRECISION_GEN-1:0] t_feature,
+    output logic      [PRECISION_GEN-1:0] f_feature,
+    output logic      [PRECISION_GEN-1:0] p_feature,
+    output logic [$clog2(MAX_EDGES) :0]   out_edge_cnt
 );
+
+    //localparam P_POS = 170
+    //localparam N_POS = 0
+
     logic [7 : 0]                       num_edges;
     logic [$clog2(MAX_EDGES)-1 : 0]     counter,counter_reg;
     logic [23 : 0] t_temp;
@@ -29,13 +36,16 @@ module feature_gen #(
     logic dividend_tvalid,divisor_tvalid;
     
     assign edge_t = in_event.t - in_edges[counter].dt;
-    assign edge_f = (counter <= 10) ? in_event.f + counter*SKIP_STEP : in_event.f + (counter - MAX_EDGES)*SKIP_STEP ;
+    assign edge_f = (in_edges[counter].df <= F_RADIUS) ? in_event.f + in_edges[counter].df*SKIP_STEP :
+                                                         in_event.f - ((in_edges[counter].df-F_RADIUS)*SKIP_STEP);
 
     assign out_event.t = in_event.t;
     assign out_event.f = in_event.f;
+    assign out_event.p = in_event.p;
     // assign out_event.is_last = in_event.is_last;
     assign out_event.valid = f_avg_valid && t_avg_valid;
     assign out_edges = in_edges;
+    assign out_edge_cnt = in_edge_cnt;
     
     always @(posedge clk) begin
         if (reset) begin
@@ -101,6 +111,7 @@ module feature_gen #(
 
     assign t_feature = (extended_t_average>>>32) + extended_t_average[31] + ZERO_POINT;
     assign f_feature = (extended_f_average>>>32) + extended_f_average[31] + ZERO_POINT;
+    assign p_feature = in_event.p ? 170 : 0;
 
     div_t div_t ( //32 clock latency
         .aclk                   ( clk             ),

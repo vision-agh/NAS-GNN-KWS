@@ -1,23 +1,27 @@
 # general settings
 version: commands               # Dataset version: commands (10+1 classes), full (35 classes)
-num_channels: 64                # Number of cochlea channels
-polarity: True                  # {True, False} if True - 2 x num_channels, False - num_channels
+num_channels: 128                # Number of cochlea channels
+polarity: False                  # {True, False} if True - 2 x num_channels, False - num_channels
 stereo: False                   # {True, False} if True - we use stereo, False- we use mono
 cochlea: left                   # {'left', 'right', 'both'}
 
 # graph construction settings
-channel_radius: 20              # Channel distance radius in graph construction
-low_time_radius: 2_000          # Inner time radius in microseconds         (0 - no inner radius)
-high_time_radius: 10_000         # Outer time radius in microseconds
+channel_radius: 1              # Channel distance radius in graph construction
+low_time_radius: 0_000          # Inner time radius in microseconds         (0 - no inner radius)
+high_time_radius: 5_000         # Outer time radius in microseconds
 time_window: 1_000_000          # Time window in microseconds for event selection
-skip_channels: 2                # Number of channels to skip from each side       (1 - no skipping)
+skip_channels: 1                # Number of channels to skip from each side       (1 - no skipping)
 features_aggregation: global    # local, global or None
 
 # filtration settings
-use_filtration: True            # Whether to use event filtration
+use_filtration: False            # Whether to use event filtration
 div_factor: 8                   # Division factor (2 ^ div_factor) for time normalization
 weight: 32                      # Weight for potential accumulation
 thresholds: None                # List of thresholds for event filtration, if None - automatic thresholding
+threshold_method: exponential   # Method for threshold generation: linear, exponential, constant
+start_threshold: 64             # Start threshold for automatic thresholding (used also in constant method)
+end_threshold: 32               # End threshold for automatic thresholding (used in linear and exponential methods)
+sharpness: 1.0                  # Sharpness for exponential thresholding
 
 # active range detection settings
 bin_width: 0.01                 # Bin width in seconds for histogram computation

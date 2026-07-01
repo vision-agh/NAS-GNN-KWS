@@ -32,6 +32,9 @@ def nas_loader(file, config):
     addresses = addresses[valid_indices]
     timestamps = timestamps[valid_indices]
 
-    timestamps = timestamps - timestamps[0]
+    if timestamps.size == 0:
+    # Option A: return arrays with a single dummy event (e.g., address=0, timestamp=0)
+        return np.array([0], dtype=np.uint32), np.array([0], dtype=np.float32)
 
+    timestamps = timestamps - timestamps[0]
     return addresses, timestamps

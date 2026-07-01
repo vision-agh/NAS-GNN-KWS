@@ -154,9 +154,7 @@ public:
                 ft = mean_t / time_window;
                 fc = mean_channel / num_channels;
             }
-
-            float pol = use_polarity ? polarity_data[real_idx] : 0.0f;
-
+            float pol = use_polarity ? polarity_data[idx] : 0.0f;
             feature.push_back({ft, fc, pol});
             ++real_idx;
         }

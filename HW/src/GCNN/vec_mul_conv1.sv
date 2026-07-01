@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module vec_mul_conv1 #(
-    parameter int INPUT_DIM = 4,
+    parameter int INPUT_DIM = 5,
     parameter int PRECISION_IN = 8,
     parameter int PRECISION_OUT = 8
 )( 
@@ -17,13 +17,10 @@ module vec_mul_conv1 #(
     output logic [PRECISION_OUT-1:0] result
 );
     
-    localparam PARALLEL = INPUT_DIM/2;
-    logic [31:0] results_reg [PARALLEL-1:0];
-    logic [31:0] sums_reg [PARALLEL-1:0];
-    logic [31:0] result_reg_accumulate;
-    logic [31:0] sum_reg_accumulate;
+    logic [31:0] results_reg;
+    logic [31:0] sums_reg, sums_reg2;
     logic [31:0] result_reg;
-    logic [31:0] sum_reg, sum_reg2;
+    logic [31:0] sum_reg;
     logic signed [31:0] result_with_bias;
     logic signed [31:0] result_with_sum;
     logic signed [63:0] result_scaled;
@@ -34,37 +31,23 @@ module vec_mul_conv1 #(
     logic [PRECISION_OUT-1:0] zero_point_weight_delayed;
     logic [PRECISION_OUT-1:0] zero_point_out_delayed;
 
-    genvar p;
-    generate
-        for (p = 0; p < PARALLEL; p++) begin : multiply
-            vec_mul_double #(
-                .PRECISION_F     ( PRECISION_IN   ),
-                .PRECISION_W     ( PRECISION_OUT  )
-            ) u_word_mul (
-                .clk       ( clk                               ),
-                .en        ( en                                ),
-                .features  ( feature_vector[(2*(p+1))-1:(2*p)] ),
-                .weights   ( weight_vector[(2*(p+1))-1:(2*p)]  ),
-                .sum       ( sums_reg[p]                       ),
-                .result    ( results_reg[p]                    )
-            );
-        end
-    endgenerate
+    vec_mul_five #(
+        .PRECISION_F  ( PRECISION_IN  ),
+        .PRECISION_W  ( PRECISION_OUT )
+    ) u_word_mul (
+        .clk       ( clk            ),
+        .en        ( en             ),
+        .features  ( feature_vector ),
+        .weights   ( weight_vector  ),
+        .sum       ( sums_reg       ),
+        .result    ( results_reg    )
+    );
 
-    genvar j;
-    generate
-        always @(posedge clk) begin
-            result_reg_accumulate <= 0;
-            sum_reg_accumulate <= 0;
-            for (int j=0; j < PARALLEL; j=j+1) begin: accumulate
-                result_reg_accumulate = result_reg_accumulate + results_reg[j];
-                sum_reg_accumulate = sum_reg_accumulate + sums_reg[j];
-            end
-            sum_reg <= sum_reg_accumulate;
-            result_reg <= result_reg_accumulate;
-            sum_reg2 <= sum_reg;
-        end
-    endgenerate
+    always @(posedge clk) begin
+        result_reg <= results_reg;
+        sums_reg2 <= sums_reg;
+        sum_reg <= sums_reg2;
+    end
 
     delay_module #(
         .N        ( 32  ),
@@ -114,7 +97,7 @@ module vec_mul_conv1 #(
 
     always @(posedge clk) begin
         result_with_bias <= $signed(result_reg) + bias_delayed;
-        result_with_sum <= result_with_bias - (sum_reg2*zero_point_weight_delayed);
+        result_with_sum <= result_with_bias - (sum_reg*zero_point_weight_delayed);
         result_scaled <= result_with_sum*$signed(multiplier_delayed);
         result <= (relu_delayed && result_scaled < 0) ? zero_point_out_delayed :
                                                         (result_scaled>>>32) + result_scaled[31] + zero_point_out_delayed;

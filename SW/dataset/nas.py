@@ -77,6 +77,7 @@ class SpikingDS(Dataset):
         pos[:, 1] = remapped_addr
 
         pos_original = pos.clone()  # for debugging outputs, before graph generation
+        polarity_feat_original = polarity_feat.clone() if polarity_feat is not None else None  # for debugging outputs, before graph generation
 
         # ---------------- EDGE GENERATION ------------------
         edge_index, x, pos = self.edge_gen.generate_edges(pos[:, 0], pos[:, 1], polarity_feat)
@@ -108,6 +109,7 @@ class SpikingDS(Dataset):
                 'hist_smoothed': hist_smoothed,
                 'file': data_file,
                 'pos_original': pos_original,
+                'polarity_feature': polarity_feat_original,
                 'pos_filtered': pos_filtered}
 
     

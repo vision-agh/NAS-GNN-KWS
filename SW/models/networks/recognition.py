@@ -22,7 +22,7 @@ class Recognition(Module):
         linear_ch = config.model.linear_channels
         num_classes = config.model.num_classes
 
-        input_dim = config.model.features
+        input_dim = config.model.features + (0 if config.dataset.polarity else 1)
         
         self.conv1 = MyPointNetConv(input_dim+2, conv_ch[0], bias=False, num_bits=conv_bits[0], first_layer=True, cfg=config)
         self.conv2 = MyPointNetConv(conv_ch[0]+2, conv_ch[1], bias=False, num_bits=conv_bits[1], cfg=config)
