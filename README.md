@@ -32,6 +32,10 @@ The software part of the project is responsible for training and evaluating GCN 
 
 The hardware part of the project is responsible for implementing both the NAS and the GCN on the FPGA (SystemVerilog/VHDL implementation). The hardware part is located in the `HW` folder. The adopted NAS implementation is generated with [OpenNAS](https://github.com/RTC-research-group/OpenNAS).
 
+### Datasets
+
+Dataset generated and used in this project are available to [download](https://drive.google.com/drive/u/1/folders/152SKPxKCNF28QePVJmLX9s7SXl120Xbq).
+
 ## Citation
 If you find this project useful in your research, please consider citing our work:
 
