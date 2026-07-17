@@ -1,6 +1,6 @@
 # general settings
 version: commands               # Dataset version: commands (10+1 classes), full (35 classes)
-num_channels: 128                # Number of cochlea channels
+num_channels: 32                # Number of cochlea channels
 polarity: False                  # {True, False} if True - 2 x num_channels, False - num_channels
 stereo: False                   # {True, False} if True - we use stereo, False- we use mono
 cochlea: left                   # {'left', 'right', 'both'}
