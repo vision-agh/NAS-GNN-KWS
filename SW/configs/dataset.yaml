@@ -6,7 +6,7 @@ stereo: False                   # {True, False} if True - we use stereo, False- 
 cochlea: left                   # {'left', 'right', 'both'}
 
 # graph construction settings
-channel_radius: 1              # Channel distance radius in graph construction
+channel_radius: 5              # Channel distance radius in graph construction
 low_time_radius: 0_000          # Inner time radius in microseconds         (0 - no inner radius)
 high_time_radius: 5_000         # Outer time radius in microseconds
 time_window: 1_000_000          # Time window in microseconds for event selection
