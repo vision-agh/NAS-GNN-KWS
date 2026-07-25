@@ -25,36 +25,22 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_ARITH.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
-entity OpenNas_Cascade_MONO_64ch is
+entity OpenNas_Parallel_MONO_32ch is
     Port (
-        clock_48   : in std_logic;
+        clock   : in std_logic;
         rst_ext : in std_logic;
         --I2S Bus
         i2s_bclk      : in  STD_LOGIC;
         i2s_d_in: in  STD_LOGIC;
         i2s_lr: in  STD_LOGIC;
         --AER Output
-        AER_DATA_OUT : out STD_LOGIC_VECTOR(6 downto 0);
+        AER_DATA_OUT : out STD_LOGIC_VECTOR(15 downto 0);
         AER_REQ      : out STD_LOGIC;
         AER_ACK      : in  STD_LOGIC
     );
-end OpenNas_Cascade_MONO_64ch;
+end OpenNas_Parallel_MONO_32ch;
 
-architecture OpenNas_arq of OpenNas_Cascade_MONO_64ch is
--- COMPONENT ila_0
-
--- PORT (
--- 	clk : IN STD_LOGIC;
-
-
-
--- 	probe0 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
--- 	probe1 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
--- 	probe2 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
--- );
--- END COMPONENT  ;
-
-
+architecture OpenNas_arq of OpenNas_Parallel_MONO_32ch is
 
     --I2S interface Stereo
     component i2s_to_spikes_stereo is
@@ -71,13 +57,13 @@ architecture OpenNas_arq of OpenNas_Cascade_MONO_64ch is
         );
     end component;
 
-    --Cascade Filter Bank
-    component CFBank_2or_64CH is
+    --Parallel Filter Bank
+    component PFBank_32CH is
         Port (
-            clock      : in  std_logic;
-            rst        : in  std_logic;
-            spikes_in  : in  std_logic_vector(1 downto 0);
-            spikes_out : out std_logic_vector(127 downto 0)
+            clock      : in  STD_LOGIC;
+            rst        : in  STD_LOGIC;
+            spikes_in  : in  STD_LOGIC_VECTOR(1 downto 0);
+            spikes_out : out STD_LOGIC_VECTOR(63 downto 0)
         );
     end component;
 
@@ -100,42 +86,26 @@ architecture OpenNas_arq of OpenNas_Cascade_MONO_64ch is
 
     --Reset signals
     signal reset : std_logic;
-    
+
     --Left spikes
     signal spikes_in_left  : std_logic_vector(1 downto 0);
-    signal spikes_out_left : std_logic_vector(127 downto 0);
+    signal spikes_out_left : std_logic_vector(63 downto 0);
 
     --Output spikes
-    signal spikes_out: std_logic_vector(127 downto 0);
-    signal clock: std_logic;
-    -- reg
-    signal AER_DATA_OUT_r : std_logic_vector(15 downto 0);
-    
-    
-	signal i2s_bclk_r: std_logic; 
-	signal i2s_d_in_r: std_logic;
-	signal i2s_lr_r : std_logic;
-	
-	
-    
-    
-    begin
-        
-        AER_DATA_OUT <= AER_DATA_OUT_r(6 downto 0);
-        
-        i2s_bclk_r <= i2s_bclk;
-        i2s_d_in_r <= i2s_d_in;
-        i2s_lr_r <= i2s_lr;
+    signal spikes_out: std_logic_vector(63 downto 0);
 
-        reset <= not rst_ext;
+
+    begin
+
+        reset <= rst_ext;
 
         --Output spikes connection
-        spikes_out <= spikes_out_left;
+        spikes_out <= spikes_out_left ;
 
         --I2S Stereo
         U_I2S_Stereo: i2s_to_spikes_stereo
         Port Map (
-            clock        => clock_48,
+            clock        => clock,
             reset        => reset,
             --I2S Bus
             i2s_bclk     => i2s_bclk,
@@ -146,10 +116,10 @@ architecture OpenNas_arq of OpenNas_Cascade_MONO_64ch is
             spikes_rigth => open
         );
 
-        --Cascade Filter Bank
-        U_CFBank_2or_64CH_Left: CFBank_2or_64CH
+        --Parallel Filter Bank
+        U_PFBank_32CH_Left: PFBank_32CH
         Port Map (
-            clock      => clock_48,
+            clock      => clock,
             rst        => reset,
             spikes_in  => spikes_in_left,
             spikes_out => spikes_out_left
@@ -158,19 +128,18 @@ architecture OpenNas_arq of OpenNas_Cascade_MONO_64ch is
         --Spikes Distributed Monitor
         U_AER_DISTRIBUTED_MONITOR: AER_DISTRIBUTED_MONITOR
         Generic Map (
-            N_SPIKES       =>128,
-            LOG_2_N_SPIKES =>7,
+            N_SPIKES       =>64,
+            LOG_2_N_SPIKES =>6,
             TAM_AER        =>2048,
             IL_AER         =>11
         )
         Port Map (
-            CLK            => clock_48,
+            CLK            => clock,
             RST            => reset,
             SPIKES_IN      => spikes_out,
-            AER_DATA_OUT   => AER_DATA_OUT_r,
+            AER_DATA_OUT   => AER_DATA_OUT,
             AER_REQ        => AER_REQ,
             AER_ACK        => AER_ACK
         );
-
 
 end OpenNas_arq;

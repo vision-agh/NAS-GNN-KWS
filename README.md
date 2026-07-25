@@ -30,11 +30,28 @@ The software part of the project is responsible for training and evaluating GCN 
 
 ### Hardware
 
-The hardware part of the project is responsible for implementing both the NAS and the GCN on the FPGA (SystemVerilog/VHDL implementation). The hardware part is located in the `HW` folder. The adopted NAS implementation is generated with [OpenNAS](https://github.com/RTC-research-group/OpenNAS).
+The hardware part contains necessary files for implementing NAS/GCNN systems (exact functionality depends on the specific variant) on the FPGA (SystemVerilog/VHDL implementation). The hardware part is located in the `HW` folder. The adopted NAS implementation is generated with [OpenNAS](https://github.com/RTC-research-group/OpenNAS). The FPGA-PC USB interface implementation is generated with [okaertool](https://github.com/RTC-research-group/okaertool). 
 
 ### Datasets
 
 Dataset generated and used in this project are available to [download](https://drive.google.com/drive/u/1/folders/152SKPxKCNF28QePVJmLX9s7SXl120Xbq).
+
+### Build
+
+Tcl source files are located in `HW/tcl` folder. By default, project is built in root/vivado folder. There are three project variants available:
+
+1. **NAS + GCNN keyword spotting system** - (TBD)
+
+2. **NAS + okaertool recording system** (`build_nas_rec.tcl`) - builds a project with integrated NAS and okaertool source files. The system receives I2S digital audio input, converts it to AER via NAS and outputs the events using okaertool interface. System was tested with XEM7310-A200 development board.
+
+3. **okaertool + GCNN keyword spotting system** - (TBD)
+
+To generate a project, open the Vivado Tcl Console, navigate to the scripts folder, and source the desired variant, for example:
+
+```tcl
+cd <path-to-repo>/HW/tcl
+source build_nas_rec.tcl
+```
 
 ## Citation
 If you find this project useful in your research, please consider citing our work:
