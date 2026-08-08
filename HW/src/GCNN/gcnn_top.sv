@@ -22,7 +22,7 @@ module gcnn_top #(
 //    output logic [PRECISION_GEN-1:0]    features_test [OUTPUT_DIM_1-1 : 0]
 );
 
-    localparam string MEMORY_DIR_PATH = "/home/pwz/Repo/NEW_IMPL/NAS-GNN-KWS/HW/mem/";
+    localparam string MEMORY_DIR_PATH = "../../mem/";
     localparam string INIT_PATH_CONV1 = {MEMORY_DIR_PATH, "conv1.mem"};
     localparam string INIT_PATH_CONV2_W = {MEMORY_DIR_PATH, "conv2_w.mem"};
     localparam string INIT_PATH_CONV2_B = {MEMORY_DIR_PATH, "conv2_b.mem"};
@@ -30,6 +30,7 @@ module gcnn_top #(
     localparam string INIT_PATH_CONV3_B = {MEMORY_DIR_PATH, "conv3_b.mem"};
     localparam string INIT_PATH_CONV4_W = {MEMORY_DIR_PATH, "conv4_w.mem"};
     localparam string INIT_PATH_CONV4_B = {MEMORY_DIR_PATH, "conv4_b.mem"};
+    localparam string INIT_PATH_HEAD = {MEMORY_DIR_PATH, "head.mem"};
 
     localparam CONV1_MULTIPLIER_DIFF_T = 84884488;
     localparam CONV1_MULTIPLIER_OUT = 36650108;
@@ -306,7 +307,9 @@ module gcnn_top #(
 
     logic [(PRECISION_GEN)-1 :0] out_cls_reg [CLS_NUM-1:0];
 
-     gru_head u_head (
+     gru_head #(
+         .INIT_PATH ( INIT_PATH_HEAD )
+     ) u_head (
          .clk         ( clk              ),
          .reset       ( reset            ),
          .in_valid    ( head_valid       ),

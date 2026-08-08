@@ -38,19 +38,28 @@ Dataset generated and used in this project are available to [download](https://d
 
 ### Build
 
-Tcl source files are located in `HW/tcl` folder. By default, running these scripts will generate the Vivado project inside a `vivado` directory at the root of the repository. To generate a project, open the Vivado Tcl Console, navigate to the `HW/tcl` folder and source the desired variant, for example:
+Tcl source files are located in `HW/tcl` folder. By default, running these scripts will generate the Vivado project inside a `<path-to-repo>/HW/vivado`. To generate a project, open the Vivado Tcl Console, navigate to the `HW/tcl` folder and source the desired variant, for example:
 
 ```tcl
 cd <path-to-repo>/HW/tcl
 source build_nas_rec.tcl
 ```
+
+Alternatively, to run synthesis + implementation + bitstream flow:
+
+```tcl
+source run_nas_rec.tcl
+```
+
 There are three project variants available:
 
-1. **NAS + GCNN keyword spotting system** - (TBD)
+1. **NAS + GCNN keyword spotting system** - (`build_kws_sys.tcl/run_kws_sys.tcl`) - builds a project with integrated NAS and GCNN source files. The system receives I2S digital audio input, converts it to AER via NAS, processes events in GNN and outputs the class + confidence result.
 
-2. **NAS + okaertool recording system** (`build_nas_rec.tcl`) - builds a project with integrated NAS and okaertool source files. The system receives I2S digital audio input, converts it to AER via NAS and outputs the events using okaertool interface. System tested with XEM7310-A200 development board.
+2. **NAS + okaertool recording system** (`build_nas_rec.tcl/run_nas_rec.tcl`) - builds a project with integrated NAS and okaertool source files. The system receives I2S digital audio input, converts it to AER via NAS and outputs the events using okaertool interface.
 
 3. **okaertool + GCNN keyword spotting system** - (TBD)
+
+All systems were tested with XEM7310-A200 development board.
 
 ## Citation
 If you find this project useful in your research, please consider citing our work:

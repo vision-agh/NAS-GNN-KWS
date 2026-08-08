@@ -18,7 +18,8 @@ module NAS_KWS_TOP (
     output logic [(PRECISION_GEN*CLS_NUM)-1:0]        out_cls
 );
 
-    logic [6:0] aer_data;
+    logic [15:0] aer_data;
+    logic [F_WIDTH:0] aer_data_clipped;
     logic       aer_req;
     logic       aer_ack;
 
@@ -27,11 +28,12 @@ module NAS_KWS_TOP (
     logic [F_WIDTH:0] link_f;
     logic               link_valid;
     
+    assign aer_data_clipped = aer_data[F_WIDTH:0];
 
     // 48 MHZ domain
-    OpenNas_Cascade_MONO_64ch i_NAS (
-        .clock_48     (clk_48),
-        .rst_ext      (rst_ext),
+    OpenNas_Parallel_MONO_32ch i_NAS (
+        .clock     (clk_48),
+        .rst_ext      (~rst_ext),
         // I2S Bus
         .i2s_bclk     (i2s_bclk),
         .i2s_d_in     (i2s_d_in),
@@ -50,7 +52,7 @@ module NAS_KWS_TOP (
         .clk       (clk_48),
         .rst       (rst_ext),
         // AER Interface
-        .AER_DATA  (aer_data),
+        .AER_DATA  (aer_data_clipped),
         .AER_REQ   (aer_req),
         .AER_ACK   (aer_ack),
         // Output to KWS

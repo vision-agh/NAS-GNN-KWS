@@ -61,7 +61,7 @@ architecture Behavioral of KWS is
 
     COMPONENT fifo_generator_ok
       PORT (
-        srst        : IN STD_LOGIC;
+        rst         : IN STD_LOGIC;
         wr_clk      : IN STD_LOGIC;
         rd_clk      : IN STD_LOGIC;
         din         : IN STD_LOGIC_VECTOR(38 DOWNTO 0);
@@ -69,9 +69,7 @@ architecture Behavioral of KWS is
         rd_en       : IN STD_LOGIC;
         dout        : OUT STD_LOGIC_VECTOR(38 DOWNTO 0);
         full        : OUT STD_LOGIC;
-        empty       : OUT STD_LOGIC;
-        wr_rst_busy : OUT STD_LOGIC;
-        rd_rst_busy : OUT STD_LOGIC 
+        empty       : OUT STD_LOGIC
       );
     END COMPONENT;
 
@@ -228,7 +226,7 @@ process(clock_48, rst_ext)
 
     FIFO_CDC : fifo_generator_ok
     PORT MAP (
-        srst        => rst_ext,
+        rst         => rst_ext,
         wr_clk      => clock_48,
         rd_clk      => clock_200,
         din         => fifo_din,
@@ -236,9 +234,7 @@ process(clock_48, rst_ext)
         rd_en       => rd_en,
         dout        => dout,
         full        => full,
-        empty       => empty,
-        wr_rst_busy => open,
-        rd_rst_busy => open
+        empty       => empty
     );
 
 rd: process(clock_200, rst_ext)

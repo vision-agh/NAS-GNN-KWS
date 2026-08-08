@@ -3,4 +3,4 @@ outputs
 nas
 SW/wandb
 SW/runs
-/vivado/
+/HW/vivado
