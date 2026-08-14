@@ -1,5 +1,6 @@
 package nas_pkg;
 
+    parameter IS_OK = 1;
 
     parameter F_RADIUS   = 5; //Search radius will be F_RADIUS*SKIPSTEPS                    
     parameter T_RADIUS_LOW   = 0;

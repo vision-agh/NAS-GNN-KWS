@@ -73,7 +73,7 @@ architecture Behavioral of KWS is
       );
     END COMPONENT;
 
-    COMPONENT gcnn_top
+    COMPONENT gcnn_top_ok
         PORT (
             clk         : in std_logic;
             reset       : in std_logic;
@@ -270,7 +270,7 @@ unpack: process(clock_200, rst_ext)
         end if;
     end process;
 
-    gcnn_inst : gcnn_top
+    gcnn_inst : gcnn_top_ok
     PORT MAP (
         clk        => clock_200,
         reset      => rst_ext,
