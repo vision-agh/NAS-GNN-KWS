@@ -1,5 +1,5 @@
 # NAS dataset specific configuration - for now do not change!
-num_channels: 128 
+num_channels: 32 
 mono_stereo: 1
 address_size: 2
 timestamp_size: 4

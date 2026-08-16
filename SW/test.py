@@ -337,8 +337,8 @@ def print_metrics(title: str, m: dict, top_k: int = 0):
 
 def main():
     parser = argparse.ArgumentParser("KWS test-only (no wandb, no saving)")
-    parser.add_argument("--run_dir", type=str, required=True,
-                        help="Path to the run folder that contains config.yaml and checkpoints/")
+    # parser.add_argument("--run_dir", type=str, required=True,
+    #                     help="Path to the run folder that contains config.yaml and checkpoints/")
     parser.add_argument("--split", type=str, default="test", choices=["test", "val", "train"],
                         help="Which split to evaluate.")
     parser.add_argument("--batch_size", type=int, default=4)
@@ -354,23 +354,23 @@ def main():
 
     set_seed(args.seed)
 
-    run_dir = Path(args.run_dir)
-    if not run_dir.exists():
-        raise FileNotFoundError(f"run_dir not found: {run_dir}")
+    # run_dir = Path(args.run_dir)
+    # if not run_dir.exists():
+    #     raise FileNotFoundError(f"run_dir not found: {run_dir}")
 
-    # ---- Load config
-    cfg_path = run_dir / "config.yaml"
-    if not cfg_path.exists():
-        raise FileNotFoundError(f"Missing config.yaml in: {run_dir}")
+    # # ---- Load config
+    # cfg_path = run_dir / "config.yaml"
+    # if not cfg_path.exists():
+    #     raise FileNotFoundError(f"Missing config.yaml in: {run_dir}")
 
-    cfg = OmegaConf.load(cfg_path)
+    cfg = OmegaConf.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P/CHECKPOINTS/config.yaml")
     OmegaConf.resolve(cfg)
 
     print("Configuration:")
     print(OmegaConf.to_yaml(cfg))
 
     # ---- dataset root
-    dataset_root = Path.home() / "Datasets" / "NAS_GSC" / "dataset_aedat_w_delays_parallel_32ch"
+    dataset_root = Path("/home/imperator/Dataset/gsc_v2_32p_ok")
     train_files, val_files, test_files = build_splits(dataset_root)
     print(f"Split sizes | Train: {len(train_files)} | Val: {len(val_files)} | Test: {len(test_files)}")
 
@@ -406,16 +406,16 @@ def main():
     print(f"Params | total: {total_params:,} | trainable: {trainable_params:,}")
 
     # ---- Load float checkpoint
-    print(f"Loading checkpoint: {run_dir / 'checkpoints' / 'best_model.pth'}")
-    state = torch.load(run_dir / "checkpoints" / "best_model.pth", map_location=device)
+    # print(f"Loading checkpoint: {run_dir / 'checkpoints' / 'best_model.pth'}")
+    state = torch.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P/CHECKPOINTS/best_model.pth", map_location=device)
     model.load_state_dict(state, strict=True)
 
     metrics = evaluate(model, dl, device, cfg, desc=f"Eval ({args.split})")
     print_metrics(f"RESULT ({args.split})", metrics, top_k=args.per_class_topk)
 
     # ---- Load quant checkpoint
-    print(f"Loading checkpoint: {run_dir / 'checkpoints' / 'best_model_calibration.pth'}")
-    state = torch.load(run_dir / "checkpoints" / "best_model_calibration.pth", map_location=device)
+    # print(f"Loading checkpoint: {run_dir / 'checkpoints' / 'best_model_calibration.pth'}")
+    state = torch.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P/CHECKPOINTS/best_model_calibration.pth", map_location=device)
     model.load_state_dict(state, strict=True)
 
     model.quantize()
