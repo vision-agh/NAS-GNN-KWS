@@ -363,7 +363,7 @@ def main():
     # if not cfg_path.exists():
     #     raise FileNotFoundError(f"Missing config.yaml in: {run_dir}")
 
-    cfg = OmegaConf.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P/CHECKPOINTS/config.yaml")
+    cfg = OmegaConf.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P_OK/CHECKPOINTS/config.yaml")
     OmegaConf.resolve(cfg)
 
     print("Configuration:")
@@ -407,7 +407,7 @@ def main():
 
     # ---- Load float checkpoint
     # print(f"Loading checkpoint: {run_dir / 'checkpoints' / 'best_model.pth'}")
-    state = torch.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P/CHECKPOINTS/best_model.pth", map_location=device)
+    state = torch.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P_OK/CHECKPOINTS/best_model.pth", map_location=device)
     model.load_state_dict(state, strict=True)
 
     metrics = evaluate(model, dl, device, cfg, desc=f"Eval ({args.split})")
@@ -415,7 +415,7 @@ def main():
 
     # ---- Load quant checkpoint
     # print(f"Loading checkpoint: {run_dir / 'checkpoints' / 'best_model_calibration.pth'}")
-    state = torch.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P/CHECKPOINTS/best_model_calibration.pth", map_location=device)
+    state = torch.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P_OK/CHECKPOINTS/best_model_calibration.pth", map_location=device)
     model.load_state_dict(state, strict=True)
 
     model.quantize()

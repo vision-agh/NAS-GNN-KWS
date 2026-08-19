@@ -6,9 +6,12 @@ def detect_active_range(hist, bin_edges, cfg):
 
     m = hist_smoothed.mean()
     s = hist_smoothed.std()
+    baseline = np.median(hist_smoothed)  # robust noise-floor estimate, unaffected by the (short) active peak
 
     T_high = cfg.dataset.mean_scale * m + cfg.dataset.std_scale * s
-    T_low = cfg.dataset.low_percentage * T_high
+    # anchor T_low to the noise floor rather than to 0, so it stays above baseline noise
+    # regardless of how high that noise floor sits (dataset-dependent)
+    T_low = baseline + cfg.dataset.low_percentage * (T_high - baseline)
 
     hs = hist_smoothed
 

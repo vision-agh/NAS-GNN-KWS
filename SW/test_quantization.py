@@ -25,17 +25,17 @@ def move_to_device(batch, dev):
 
 # Prepare dataset
 files = glob.glob(
-    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_parallel_32ch/stop/cd85758f_nohash_2.wav*"
+    f"/home/imperator/Dataset/gsc_v2_32p_ok/stop/cd85758f_nohash_2.wav*"
 )
 # cfg = build_config(model_cfg_path="configs/kws.yaml")
 
-cfg = OmegaConf.load('runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/config.yaml')
+cfg = OmegaConf.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P_OK/CHECKPOINTS/config.yaml')
 OmegaConf.resolve(cfg)
 ds = SpikingDS(files, cfg)
 
 # Prepare model
 model = KWS(cfg).to('cuda')
-ckpt = torch.load('runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/checkpoints/best_model_calibration.pth')
+ckpt = torch.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P_OK/CHECKPOINTS/best_model_calibration.pth')
 model.load_state_dict(ckpt)
 model.eval()
 
@@ -43,8 +43,8 @@ model.eval()
 model.quantize()
 
 # Create output directory for debug outputs
-path_debug = 'runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/debug_outputs/'
-path_parameters = 'runs/kws/20260216_225818_job12650489_task3_x1002c3s2b0n0/parameters/'
+path_debug = '/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P_OK/debug_outputs/'
+path_parameters = '/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P_OK/parameters/'
 os.makedirs(path_debug, exist_ok=True)
 os.makedirs(path_parameters, exist_ok=True)
 

@@ -10,7 +10,8 @@ from configs.build_config import build_config
 vis_edges = False
 
 files = glob.glob(
-    f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_parallel/zero/facd97c0_nohash_0*"
+    f"/home/imperator/Dataset/gsc_v2_32p_ok/*/*"
+    # f"/home/imperator/Dataset/dataset_aedat_w_delays_parallel_32ch/*/*"
 )
 
     # f"{Path.home()}/Datasets/NAS_GSC/dataset_aedat_w_delays_parallel/zero/5170b77f_nohash_2*"
