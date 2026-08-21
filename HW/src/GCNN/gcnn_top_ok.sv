@@ -181,7 +181,7 @@ module gcnn_top_ok #(
 //        end
 //        CLK_CNT <= CLK_CNT+1;
 //        // 1sek = 200000000
-//        if (CLK_CNT > 1000000) begin
+//        if (CLK_CNT > 1_000_000) begin
 //            $fclose(fd);
 //            $finish;
 //        end
@@ -233,11 +233,11 @@ module gcnn_top_ok #(
       );
 
 //    // for simulation purposed
-//    integer fd;
+//    integer fd2;
 //    int CLK_CNT = 0;
 //    initial begin
-//        fd = $fopen("output2.txt", "w");
-//        if (fd == 0) begin
+//        fd2 = $fopen("output2.txt", "w");
+//        if (fd2 == 0) begin
 //            $display("Nie można otworzyć pliku!");
 //            $finish;
 //        end
@@ -246,16 +246,16 @@ module gcnn_top_ok #(
 //    always @(posedge clk) begin
 //        if (event_to_buff3.valid) begin
 //            for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
-//                $fwrite(fd, "%0d, ", features_to_buff3[i]);
+//                $fwrite(fd2, "%0d, ", features_to_buff3[i]);
 //            end
-//            $fdisplay(fd, "%0d", features_to_buff3[nas_pkg::OUTPUT_DIM_1-1]);
+//            $fdisplay(fd2, "%0d", features_to_buff3[nas_pkg::OUTPUT_DIM_1-1]);
 //        end
 //        CLK_CNT <= CLK_CNT+1;
 //        // 1sek = 200000000
-//        if (CLK_CNT > 1000000) begin
-//            $fclose(fd);
-//            $finish;
-//        end
+////        if (CLK_CNT > 500_000) begin
+////            $fclose(fd);
+////            $finish;
+////        end
 //    end
 //    // for simulation purposed
 
@@ -303,6 +303,35 @@ module gcnn_top_ok #(
           .out_features ( features_to_buff4 ),
           .out_edge_cnt ( edge_cnt_to_buff4 )
       );
+
+//    // for simulation purposed
+//    integer fd;
+//    int CLK_CNT = 0;
+//    initial begin
+//        fd = $fopen("output4.txt", "w");
+//        if (fd == 0) begin
+//            $display("Nie można otworzyć pliku!");
+//            $finish;
+//        end
+//    end
+
+//    always @(posedge clk) begin
+//        if (event_to_buff4.valid) begin
+//            for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
+//                $fwrite(fd, "%0d, ", features_to_buff4[i]);
+//            end
+//            $fdisplay(fd, "%0d", features_to_buff4[nas_pkg::OUTPUT_DIM_1-1]);
+//        end
+//        CLK_CNT <= CLK_CNT+1;
+//        // 1sek = 100_000_000
+//        if (CLK_CNT > 100_000) begin
+//            $fclose(fd);
+//            //$fclose(fd2);
+//            $finish;
+//        end
+//    end
+//    // for simulation purposed
+
 
     buffer #(
         .FEATURE_DIM  ( OUTPUT_DIM_3 )
@@ -371,9 +400,10 @@ module gcnn_top_ok #(
             $fdisplay(fd, "%0d", features_to_pool[nas_pkg::OUTPUT_DIM_1-1]);
         end
         CLK_CNT <= CLK_CNT+1;
-        // 1sek = 200000000
-        if (CLK_CNT > 100000000) begin
+        // 1sek = 100_000_000
+        if (CLK_CNT > 10_000_000) begin
             $fclose(fd);
+            //$fclose(fd2);
             $finish;
         end
     end

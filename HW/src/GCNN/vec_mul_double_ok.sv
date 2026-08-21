@@ -20,7 +20,7 @@ module vec_mul_double_ok #(
     always @(posedge clk) begin
         result_reg[0] <= en ? (features[0] * weights[0]) : result_reg[0];
         result_reg[1] <= en ? (features[1] * weights[1]) : result_reg[1];
-        sum_reg <= features[0] + features[1];
+        sum_reg <= en ? features[0] + features[1] : sum_reg;
 
         sum_reg2 <= sum_reg;
         result_reg2 <= result_reg[0] + result_reg[1];

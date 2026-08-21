@@ -59,7 +59,7 @@ module convolution_sparse_ok #(
     localparam LOAD = 2'd1;
     localparam CONV = 2'd2;
     localparam SAVE = 2'd3;
-    logic [1:0] state, state_reg, state_RM, state_mul_in = IDLE;
+    logic [1:0] state, state_reg, state_mul_in = IDLE;
     logic [$clog2(F_RADIUS):0]                     iter_counter, iter_counter_reg;
     logic [$clog2((OUTPUT_DIM*MEMORY_FACTOR)/2):0] outdim_counter, outdim_counter_reg;
 
@@ -261,7 +261,7 @@ module convolution_sparse_ok #(
     ) weights_memory   (
         .clk      ( clk      ),
         .en       ( state == CONV   ),
-        .addr     ( outdim_counter  ),
+        .addr     ( outdim_counter[$clog2(OUTPUT_DIM*2)-1:0]  ),
         .dout1    ( weight_mem1     ),
         .dout2    ( weight_mem2     )
     );
@@ -274,10 +274,10 @@ module convolution_sparse_ok #(
         .INIT_PATH ( INIT_PATH_B         )
     ) bias_memory (
         .clk      ( clk      ),
-        .en       ( state == CONV   ),
-        .addr     ( outdim_counter  ),
-        .dout1    ( bias_mem1       ),
-        .dout2    ( bias_mem2       )
+        .en       ( state == CONV                             ),
+        .addr     ( outdim_counter[$clog2(OUTPUT_DIM*2)-1:0]  ),
+        .dout1    ( bias_mem1                                 ),
+        .dout2    ( bias_mem2                                 )
     );
 
 
@@ -295,8 +295,8 @@ module convolution_sparse_ok #(
     // Multiplication (on reg
     logic [PRECISION_OUT-1:0] output_mat_a;
     logic [PRECISION_OUT-1:0] output_mat_b;
-    logic [PRECISION_OUT-1:0] output_mat_a_full [OUTPUT_DIM-1:0];
-    logic [PRECISION_OUT-1:0] output_mat_b_full [OUTPUT_DIM-1:0];
+    (* ram_style = "distributed" *) logic [PRECISION_OUT-1:0] output_mat_a_full [OUTPUT_DIM-1:0];
+    (* ram_style = "distributed" *) logic [PRECISION_OUT-1:0] output_mat_b_full [OUTPUT_DIM-1:0];
     logic [PRECISION_OUT-1:0] output_mat_full [OUTPUT_DIM-1:0];
 
     vec_mul_ok #(
@@ -304,16 +304,16 @@ module convolution_sparse_ok #(
         .PRECISION_IN      ( PRECISION_IN   ),
         .PRECISION_OUT     ( PRECISION_OUT  )
     ) mul_a (
-        .clk               ( clk               ),
-        .en                ( en_mula_reg       ),
-        .feature_vector    ( features_a_reg    ),
-        .weight_vector     ( single_weight     ),
-        .bias              ( single_bias       ),
-        .relu              ( 1'b1              ),
-        .multiplier        ( MULTIPLIER_OUT    ),
-        .zero_point_weight ( ZERO_POINT_WEIGHT ),
-        .zero_point_out    ( ZERO_POINT_OUT    ),
-        .result            ( output_mat_a      )
+        .clk               ( clk                                 ),
+        .en                ( en_mula_reg                         ),
+        .feature_vector    ( features_a_reg                      ),
+        .weight_vector     ( single_weight                       ),
+        .bias              ( single_bias                         ),
+        .relu              ( 1'b1                                ),
+        .multiplier        ( MULTIPLIER_OUT                      ),
+        .zero_point_weight ( ZERO_POINT_WEIGHT[PRECISION_IN-1:0] ),
+        .zero_point_out    ( ZERO_POINT_OUT[PRECISION_OUT-1:0]   ),
+        .result            ( output_mat_a                        )
     );
 
     vec_mul_ok #(
@@ -321,16 +321,16 @@ module convolution_sparse_ok #(
         .PRECISION_IN      ( PRECISION_IN   ),
         .PRECISION_OUT     ( PRECISION_OUT  )
     ) mul_b (
-        .clk               ( clk               ),
-        .en                ( en_mulb_reg       ),
-        .feature_vector    ( features_b_reg    ),
-        .weight_vector     ( single_weight     ),
-        .bias              ( single_bias       ),
-        .relu              ( 1'b1              ),
-        .multiplier        ( MULTIPLIER_OUT    ),
-        .zero_point_weight ( ZERO_POINT_WEIGHT ),
-        .zero_point_out    ( ZERO_POINT_OUT    ),
-        .result            ( output_mat_b      )
+        .clk               ( clk                                 ),
+        .en                ( en_mulb_reg                         ),
+        .feature_vector    ( features_b_reg                      ),
+        .weight_vector     ( single_weight                       ),
+        .bias              ( single_bias                         ),
+        .relu              ( 1'b1                                ),
+        .multiplier        ( MULTIPLIER_OUT                      ),
+        .zero_point_weight ( ZERO_POINT_WEIGHT[PRECISION_IN-1:0] ),
+        .zero_point_out    ( ZERO_POINT_OUT[PRECISION_OUT-1:0]   ),
+        .result            ( output_mat_b                        )
     );
 
     // Post Process
@@ -341,7 +341,7 @@ module convolution_sparse_ok #(
 
     delay_module #(
         .N        ( 2   ),
-        .DELAY    ( 10  )
+        .DELAY    ( 11  )
     ) delay_en (
         .clk   ( clk                        ),
         .idata ( {en_mula, en_mulb}         ),
@@ -350,7 +350,7 @@ module convolution_sparse_ok #(
 
     delay_module #(
         .N        ( $clog2((OUTPUT_DIM*MEMORY_FACTOR)/2)+1 ),
-        .DELAY    ( 10                                      )
+        .DELAY    ( 11                                      )
     ) delay_outdim (
         .clk   ( clk         ),
         .idata ( outdim_counter         ),
@@ -359,7 +359,7 @@ module convolution_sparse_ok #(
 
     delay_module #(
         .N        ( $clog2(F_RADIUS)+1 ),
-        .DELAY    ( 10                 )
+        .DELAY    ( 11                 )
     ) delay_iter (
         .clk   ( clk              ),
         .idata ( iter_counter     ),
@@ -369,9 +369,6 @@ module convolution_sparse_ok #(
     always @(posedge clk) begin
         output_mat_a_full[outdim_counter_mul_out] <= en_mula_out ? output_mat_a : '0;
         output_mat_b_full[outdim_counter_mul_out] <= en_mulb_out ? output_mat_b : '0;
-    end
-
-    always @(posedge clk) begin
         outdim_counter_compare <= outdim_counter_mul_out;
         outdim_counter_acc <= outdim_counter_compare;
         output_mat_full[outdim_counter_compare] <= output_mat_a_full[outdim_counter_compare] > output_mat_b_full[outdim_counter_compare] ?
@@ -389,8 +386,8 @@ module convolution_sparse_ok #(
     end
 
     delay_module #(
-        .N        ( 41 ),
-        .DELAY    ( 5 )
+        .N        ( $bits(event_reg) ),
+        .DELAY    ( 6                )
     ) delay_event (
         .clk   ( clk         ),
         .idata ( {event_reg} ),
@@ -398,8 +395,8 @@ module convolution_sparse_ok #(
     );
 
     delay_module #(
-        .N        ( 441 ),
-        .DELAY    ( 5   )
+        .N        ( $bits(edges_reg) ),
+        .DELAY    ( 6                )
     ) delay_edge (
         .clk   ( clk     ),
         .idata ( {edges_reg} ),
@@ -408,7 +405,7 @@ module convolution_sparse_ok #(
 
     delay_module #(
         .N        ( $clog2(MAX_EDGES)+1 ),
-        .DELAY    ( 5                   )
+        .DELAY    ( 6                   )
     ) delay_edge_cnt (
         .clk   ( clk     ),
         .idata ( {edge_cnt_reg} ),

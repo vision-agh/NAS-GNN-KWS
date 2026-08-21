@@ -19,12 +19,18 @@ module vec_mul_ok #(
     
     localparam IS_OFFSET = (INPUT_DIM % 6 == 0) ? 0 : 1;
     localparam PARALLEL = (INPUT_DIM - (2*IS_OFFSET)) / 6;
+    localparam int NUM_TERMS  = PARALLEL + 1;
+    localparam int HALF_TERMS = NUM_TERMS/2;
     logic [31:0] results_reg [PARALLEL:0];
     logic [31:0] sums_reg [PARALLEL:0];
     logic [31:0] results_reg2 [PARALLEL:0];
     logic [31:0] sums_reg2 [PARALLEL:0];
-    logic [31:0] result_reg_accumulate;
-    logic [31:0] sum_reg_accumulate;
+    logic [31:0] results_reg3 [PARALLEL:0];
+    logic [31:0] sums_reg3 [PARALLEL:0];
+    logic [31:0] result_reg_accumulate_lo, result_reg_accumulate_hi;
+    logic [31:0] sum_reg_accumulate_lo, sum_reg_accumulate_hi;
+    logic [31:0] result_partial_lo_reg;
+    logic [31:0] sum_partial_lo_reg;
     logic [31:0] result_reg;
     logic [31:0] sum_reg, sum_reg2;
     logic signed [31:0] result_with_bias;
@@ -56,7 +62,7 @@ module vec_mul_ok #(
             vec_mul_double_ok #(
                 .PRECISION_F     ( PRECISION_IN   ),
                 .PRECISION_W     ( PRECISION_OUT  )
-            ) u_word_mul (
+            ) u_word_mul_last (
                 .clk       ( clk                                     ),
                 .en        ( en                                      ),
                 .features  ( feature_vector[INPUT_DIM-1:INPUT_DIM-2] ),
@@ -72,28 +78,40 @@ module vec_mul_ok #(
     endgenerate
 
     always @(posedge clk) begin
-        for (int j=0; j <= PARALLEL; j=j+1) begin: prepare
+        result_reg_accumulate_lo = 0;
+        result_reg_accumulate_hi = 0;
+        sum_reg_accumulate_lo = 0;
+        sum_reg_accumulate_hi = 0;
+
+        // lower half: summed from reg2 (registered below, aligned with reg3)
+        for (int j = 0; j < HALF_TERMS; j = j+1) begin: accumulate_lo
+            result_reg_accumulate_lo = result_reg_accumulate_lo + results_reg2[j];
+            sum_reg_accumulate_lo    = sum_reg_accumulate_lo    + sums_reg2[j];
+        end
+        // upper half: summed from reg3, combined with the already-registered lower half
+        for (int j = HALF_TERMS; j <= PARALLEL; j = j+1) begin: accumulate_hi
+            result_reg_accumulate_hi = result_reg_accumulate_hi + results_reg3[j];
+            sum_reg_accumulate_hi    = sum_reg_accumulate_hi    + sums_reg3[j];
+        end
+
+        for (int j=0; j <= PARALLEL; j=j+1) begin: shift
             results_reg2[j] <= results_reg[j];
+            results_reg3[j] <= results_reg2[j];
             sums_reg2[j] <= sums_reg[j];
+            sums_reg3[j] <= sums_reg2[j];
         end
-    end
 
+        result_partial_lo_reg <= result_reg_accumulate_lo;
+        sum_partial_lo_reg    <= sum_reg_accumulate_lo;
 
-    always @(posedge clk) begin
-        result_reg_accumulate = 0;
-        sum_reg_accumulate = 0;
-        for (int j=0; j <= PARALLEL; j=j+1) begin: accumulate
-            result_reg_accumulate = result_reg_accumulate + results_reg2[j];
-            sum_reg_accumulate = sum_reg_accumulate + sums_reg2[j];
-        end
-        sum_reg <= sum_reg_accumulate;
-        sum_reg2 <= sum_reg;
-        result_reg <= result_reg_accumulate;
+        result_reg <= result_partial_lo_reg + result_reg_accumulate_hi;
+        sum_reg     <= sum_partial_lo_reg    + sum_reg_accumulate_hi;
+        sum_reg2    <= sum_reg;
     end
 
     delay_module #(
         .N        ( 32  ),
-        .DELAY    ( 5   )
+        .DELAY    ( 6   )
     ) delay_bias (
         .clk   ( clk          ),
         .idata ( bias         ),
@@ -102,7 +120,7 @@ module vec_mul_ok #(
 
     delay_module #(
         .N        ( PRECISION_OUT  ),
-        .DELAY    ( 6              )
+        .DELAY    ( 7              )
     ) delay_zero_point_wright (
         .clk   ( clk                       ),
         .idata ( zero_point_weight         ),
@@ -111,7 +129,7 @@ module vec_mul_ok #(
 
     delay_module #(
         .N        ( 32  ),
-        .DELAY    ( 7   )
+        .DELAY    ( 8   )
     ) delay_multipler (
         .clk   ( clk                ),
         .idata ( multiplier         ),
@@ -120,7 +138,7 @@ module vec_mul_ok #(
 
     delay_module #(
         .N        ( PRECISION_OUT  ),
-        .DELAY    ( 8              )
+        .DELAY    ( 9              )
     ) delay_zero_point_out (
         .clk   ( clk                    ),
         .idata ( zero_point_out         ),
@@ -130,13 +148,12 @@ module vec_mul_ok #(
 
     delay_module #(
         .N        ( 1  ),
-        .DELAY    ( 8 )
+        .DELAY    ( 9  )
     ) delay_relu (
         .clk   ( clk          ),
         .idata ( relu         ),
         .odata ( relu_delayed )
     );
-
 
     always @(posedge clk) begin
         result_with_bias <= $signed(result_reg) + bias_delayed;
