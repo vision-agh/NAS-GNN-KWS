@@ -4,3 +4,10 @@ nas
 SW/wandb
 SW/runs
 /HW/vivado
+
+HW/ip/ok/*/*
+!HW/ip/ok/*/*.xci
+!HW/ip/ok/FrontPanel-Subsystem-v1.1.0/
+
+HW/ip/fp/IP/*
+!HW/ip/fp/IP/.gitkeep

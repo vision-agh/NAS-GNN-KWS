@@ -4,7 +4,7 @@
     "xci_name": "div_f",
     "component_reference": "xilinx.com:ip:div_gen:5.1",
     "ip_revision": "19",
-    "gen_directory": "../../../../NAS_KWS_SYS_32p.gen/sources_1/ip/div_f",
+    "gen_directory": ".",
     "parameters": {
       "component_parameters": {
         "Component_Name": [ { "value": "div_f", "resolve_type": "user", "usage": "all" } ],
@@ -76,7 +76,7 @@
         "IPCONTEXT": [ { "value": "IP_Flow" } ],
         "IPREVISION": [ { "value": "19" } ],
         "MANAGED": [ { "value": "TRUE" } ],
-        "OUTPUTDIR": [ { "value": "../../../../NAS_KWS_SYS_32p.gen/sources_1/ip/div_f" } ],
+        "OUTPUTDIR": [ { "value": "." } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
         "SHAREDDIR": [ { "value": "." } ],
         "SWVERSION": [ { "value": "2022.2" } ],
