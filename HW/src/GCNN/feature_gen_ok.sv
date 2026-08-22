@@ -113,7 +113,7 @@ module feature_gen_ok #(
     always @(posedge clk) begin
         extended_t_average <= num_edges != 0 ? (round_t_average+t_average[1]) * T_MULTIPLIER : '0;
         extended_f_average <= num_edges != 0 ? (round_f_average+f_average[1]) * F_MULTIPLIER : '0;
-        p_feature <= in_event.p ? 198 : 0;
+        p_feature <= in_event.p ? 170 : 0;
         f_avg_valid <= f_avg_valid_reg;
         t_avg_valid <= t_avg_valid_reg;
     end

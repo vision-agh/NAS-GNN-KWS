@@ -32,33 +32,34 @@ module gcnn_top_ok #(
     localparam string INIT_PATH_CONV4_B = {MEMORY_DIR_PATH, "conv4_b.mem"};
     localparam string INIT_PATH_HEAD = {MEMORY_DIR_PATH, "head.mem"};
 
-    localparam CONV1_MULTIPLIER_DIFF_T = 84884488;
-    localparam CONV1_MULTIPLIER_OUT = 36650108;
-    localparam CONV1_ZERO_POINT_IN = 99;
-    localparam CONV1_ZERO_POINT_OUT = 157;
-    localparam CONV1_ZERO_POINT_WEIGHT = 151;      
-    localparam logic [7:0] CONV1_SCALE_IN [10:0] = {0, 20, 40, 59, 79, 198, 178, 158, 139, 119, 99};
+    localparam CONV1_MULTIPLIER_DIFF_T = 73024600;
+    localparam CONV1_MULTIPLIER_OUT = 40539932;
+    localparam CONV1_ZERO_POINT_IN = 85;
+    localparam CONV1_ZERO_POINT_OUT = 141;
+    localparam CONV1_ZERO_POINT_WEIGHT = 149;      
+    //localparam logic [7:0] CONV1_SCALE_IN [10:0] = {0, 20, 40, 59, 79, 198, 178, 158, 139, 119, 99};
+    localparam logic [7:0] CONV1_SCALE_IN [10:0] = {0, 17, 34, 51, 68, 170, 153, 136, 119, 102, 85};
 
-    localparam CONV2_MULTIPLIER_DIFF_T = 20096254;
-    localparam CONV2_MULTIPLIER_OUT = 75262432;
-    localparam CONV2_ZERO_POINT_IN = 157;
-    localparam CONV2_ZERO_POINT_OUT = 124;
-    localparam CONV2_ZERO_POINT_WEIGHT = 97;       
-    localparam logic [7:0] CONV2_SCALE_IN [10:0] = {134,138,143,148,152,180,176,171,166,162,157};
+    localparam CONV2_MULTIPLIER_DIFF_T = 22750648;
+    localparam CONV2_MULTIPLIER_OUT = 94549432;
+    localparam CONV2_ZERO_POINT_IN = 141;
+    localparam CONV2_ZERO_POINT_OUT = 125;
+    localparam CONV2_ZERO_POINT_WEIGHT = 73;       
+    localparam logic [7:0] CONV2_SCALE_IN [10:0] = {115,120,125,130,136,167,162,157,152,146,141};
 
-    localparam CONV3_MULTIPLIER_DIFF_T = 23465478;
-    localparam CONV3_MULTIPLIER_OUT = 29568546;
-    localparam CONV3_ZERO_POINT_IN = 124;
-    localparam CONV3_ZERO_POINT_OUT = 72;
-    localparam CONV3_ZERO_POINT_WEIGHT = 87;       
-    localparam logic [7:0] CONV3_SCALE_IN [10:0] = {97, 102, 108, 113, 119, 151, 146, 140, 135, 129, 124};
+    localparam CONV3_MULTIPLIER_DIFF_T = 16436608;
+    localparam CONV3_MULTIPLIER_OUT = 51924164;
+    localparam CONV3_ZERO_POINT_IN = 125;
+    localparam CONV3_ZERO_POINT_OUT = 153;
+    localparam CONV3_ZERO_POINT_WEIGHT = 121;       
+    localparam logic [7:0] CONV3_SCALE_IN [10:0] = {106,110,114,117,121,144,140,136,133,129,125};
 
-    localparam CONV4_MULTIPLIER_DIFF_T = 9689040;
-    localparam CONV4_MULTIPLIER_OUT = 35077416;
-    localparam CONV4_ZERO_POINT_IN = 72;
-    localparam CONV4_ZERO_POINT_OUT = 114;
-    localparam CONV4_ZERO_POINT_WEIGHT = 130;   
-    localparam logic [7:0] CONV4_SCALE_IN [10:0] = {61, 63, 65, 67, 70, 83, 81, 79, 77, 74, 72};
+    localparam CONV4_MULTIPLIER_DIFF_T = 14870247;
+    localparam CONV4_MULTIPLIER_OUT = 41957212;
+    localparam CONV4_ZERO_POINT_IN = 153;
+    localparam CONV4_ZERO_POINT_OUT = 133;
+    localparam CONV4_ZERO_POINT_WEIGHT = 135;   
+    localparam logic [7:0] CONV4_SCALE_IN [10:0] = {136,139,143,146,150,170,167,163,160,156,153};
 
     event_type                   event_to_conv1, event_to_conv2, event_to_conv3, event_to_conv4, event_to_pool;
     event_type                   event_to_buff1, event_to_buff2, event_to_buff3, event_to_buff4;
@@ -252,10 +253,10 @@ module gcnn_top_ok #(
 //        end
 //        CLK_CNT <= CLK_CNT+1;
 //        // 1sek = 200000000
-////        if (CLK_CNT > 500_000) begin
-////            $fclose(fd);
-////            $finish;
-////        end
+//        if (CLK_CNT > 1_000_000) begin
+//            $fclose(fd2);
+//            $finish;
+//        end
 //    end
 //    // for simulation purposed
 
@@ -381,33 +382,33 @@ module gcnn_top_ok #(
 
      logic head_valid;
 
-//    // for simulation purposed
-//    integer fd;
-//    int CLK_CNT = 0;
-//    initial begin
-//        fd = $fopen("output4.txt", "w");
-//        if (fd == 0) begin
-//            $display("Nie można otworzyć pliku!");
-//            $finish;
-//        end
-//    end
+    // for simulation purposed
+    integer fd;
+    int CLK_CNT = 0;
+    initial begin
+        fd = $fopen("output4.txt", "w");
+        if (fd == 0) begin
+            $display("Nie można otworzyć pliku!");
+            $finish;
+        end
+    end
 
-//    always @(posedge clk) begin
-//        if (event_to_pool.valid) begin
-//            for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
-//                $fwrite(fd, "%0d, ", features_to_pool[i]);
-//            end
-//            $fdisplay(fd, "%0d", features_to_pool[nas_pkg::OUTPUT_DIM_1-1]);
-//        end
-//        CLK_CNT <= CLK_CNT+1;
-//        // 1sek = 100_000_000
-//        if (CLK_CNT > 10_000_000) begin
-//            $fclose(fd);
-//            //$fclose(fd2);
-//            $finish;
-//        end
-//    end
-//    // for simulation purposed
+    always @(posedge clk) begin
+        if (event_to_pool.valid) begin
+            for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
+                $fwrite(fd, "%0d, ", features_to_pool[i]);
+            end
+            $fdisplay(fd, "%0d", features_to_pool[nas_pkg::OUTPUT_DIM_1-1]);
+        end
+        CLK_CNT <= CLK_CNT+1;
+        // 1sek = 100_000_000
+        if (CLK_CNT > 10_005_000) begin
+            $fclose(fd);
+            //$fclose(fd2);
+            $finish;
+        end
+    end
+    // for simulation purposed
 
 
 
