@@ -381,33 +381,33 @@ module gcnn_top_ok #(
 
      logic head_valid;
 
-    // for simulation purposed
-    integer fd;
-    int CLK_CNT = 0;
-    initial begin
-        fd = $fopen("output4.txt", "w");
-        if (fd == 0) begin
-            $display("Nie można otworzyć pliku!");
-            $finish;
-        end
-    end
+//    // for simulation purposed
+//    integer fd;
+//    int CLK_CNT = 0;
+//    initial begin
+//        fd = $fopen("output4.txt", "w");
+//        if (fd == 0) begin
+//            $display("Nie można otworzyć pliku!");
+//            $finish;
+//        end
+//    end
 
-    always @(posedge clk) begin
-        if (event_to_pool.valid) begin
-            for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
-                $fwrite(fd, "%0d, ", features_to_pool[i]);
-            end
-            $fdisplay(fd, "%0d", features_to_pool[nas_pkg::OUTPUT_DIM_1-1]);
-        end
-        CLK_CNT <= CLK_CNT+1;
-        // 1sek = 100_000_000
-        if (CLK_CNT > 10_000_000) begin
-            $fclose(fd);
-            //$fclose(fd2);
-            $finish;
-        end
-    end
-    // for simulation purposed
+//    always @(posedge clk) begin
+//        if (event_to_pool.valid) begin
+//            for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
+//                $fwrite(fd, "%0d, ", features_to_pool[i]);
+//            end
+//            $fdisplay(fd, "%0d", features_to_pool[nas_pkg::OUTPUT_DIM_1-1]);
+//        end
+//        CLK_CNT <= CLK_CNT+1;
+//        // 1sek = 100_000_000
+//        if (CLK_CNT > 10_000_000) begin
+//            $fclose(fd);
+//            //$fclose(fd2);
+//            $finish;
+//        end
+//    end
+//    // for simulation purposed
 
 
 
@@ -426,7 +426,7 @@ module gcnn_top_ok #(
 
     logic [(PRECISION_GEN)-1 :0] out_cls_reg [CLS_NUM-1:0];
 
-     gru_head #(
+     gru_head_ok #(
          .INIT_PATH ( INIT_PATH_HEAD )
      ) u_head (
          .clk         ( clk              ),

@@ -4,8 +4,8 @@ import nas_pkg::*;
 
 module kws_ut;
 
-    //parameter INPUT_PATH = "/home/pwz/Music/debug_outputs/input_events.txt";
-    parameter INPUT_PATH = "/home/pwz/Repo/NEW_IMPL/NAS-GNN-KWS/HW/tb/custom_events_32.txt";
+    parameter INPUT_PATH = "//home/pwz/Music/32_parallel/debug_outputs/input_events.txt";
+    //parameter INPUT_PATH = "/home/pwz/Repo/NEW_IMPL/NAS-GNN-KWS/HW/tb/custom_events_32.txt";
     parameter TIME_WINDOW = 10000; // We test only single time window
 
     logic [T_WIDTH-1:0] t;
@@ -83,8 +83,8 @@ module kws_ut;
             else begin
                 rst <= 1'b0;
             end
-            #2500 clock_200 <= 1'b0;
-            #2500 clock_200 <= 1'b1;
+            #5000 clock_200 <= 1'b0;
+            #5000 clock_200 <= 1'b1;
         end
     end
 
