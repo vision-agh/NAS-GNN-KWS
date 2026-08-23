@@ -1,5 +1,6 @@
 package nas_pkg;
 
+    parameter IS_OK = 1;
 
     parameter F_RADIUS   = 5; //Search radius will be F_RADIUS*SKIPSTEPS                    
     parameter T_RADIUS_LOW   = 0;
@@ -40,9 +41,9 @@ package nas_pkg;
     } edge_type;
 
     parameter DELTA_T_WIDTH = 15; //max value of 20000
-    parameter GEN_MULTIPLIER_T = 424422;
-    parameter [63:0] GEN_MULTIPLIER_F = 64'd13263200211; // (add 2^32)
-    parameter GEN_ZERO_POINT = 99;
+    parameter GEN_MULTIPLIER_T = 365123;
+    parameter [63:0] GEN_MULTIPLIER_F = 64'd11410094566; // (add 2^32)
+    parameter GEN_ZERO_POINT = 85;
 
     // LIF parameters
     parameter DECAY_SHIFT = 8;

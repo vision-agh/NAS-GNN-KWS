@@ -77,17 +77,15 @@ module handle_memory #(
         end
     end
 
-    genvar w;
-    generate
-        for (w = 0; w < (FEATURE_DIM/MEMORY_FACTOR); w++) begin : weights_assign
-            always @(posedge clk) begin
+    always @(posedge clk) begin
+        for (int w = 0; w < (FEATURE_DIM/MEMORY_FACTOR); w++) begin : weights_assign
                 dina_features[w] <= in_feature[w+(counter*(FEATURE_DIM/MEMORY_FACTOR))];
                 dinb_features[w] <= in_feature[36+w+(counter*(FEATURE_DIM/MEMORY_FACTOR))];
                 out_feature[w+(counter_reg*(FEATURE_DIM/MEMORY_FACTOR))] <= douta_features[w];
                 out_feature[36+w+(counter_reg*(FEATURE_DIM/MEMORY_FACTOR))] <= doutb_features[w];
-            end
         end
-    endgenerate
+   end
+
 
     //  1  2  3  4  5  6  7  8
     // 37 38 39 40 41 42 43 44

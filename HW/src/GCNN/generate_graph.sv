@@ -3,6 +3,7 @@
 import nas_pkg::*;
 
 module generate_graph #(
+    parameter OK = IS_OK
 )( 
     input  logic                          clk,
     input  logic                          reset,
@@ -45,22 +46,48 @@ module generate_graph #(
         
     );
 
-    feature_gen #(
-        .T_MULTIPLIER ( GEN_MULTIPLIER_T ),
-        .F_MULTIPLIER ( GEN_MULTIPLIER_F ),
-        .ZERO_POINT   ( GEN_ZERO_POINT   )
-    ) u_feature_gen (
-        .clk           ( clk                  ),
-        .reset         ( reset                ),
-        .in_event      ( event_to_feature_gen ),
-        .in_edges      ( edges_to_feature_gen ),
-        .in_edge_cnt   ( edge_cnt_temp        ),
-        .out_event     ( out_event            ),
-        .out_edges     ( out_edges            ),
-        .t_feature     ( t_feature            ),
-        .f_feature     ( f_feature            ),
-        .p_feature     ( p_feature            ),
-        .out_edge_cnt  ( edge_cnt             )
-    );
+    generate
+    begin
+    
+        if (IS_OK) begin
+            feature_gen_ok #(
+                .T_MULTIPLIER ( GEN_MULTIPLIER_T ),
+                .F_MULTIPLIER ( GEN_MULTIPLIER_F ),
+                .ZERO_POINT   ( GEN_ZERO_POINT   )
+            ) u_feature_gen (
+                .clk           ( clk                  ),
+                .reset         ( reset                ),
+                .in_event      ( event_to_feature_gen ),
+                .in_edges      ( edges_to_feature_gen ),
+                .in_edge_cnt   ( edge_cnt_temp        ),
+                .out_event     ( out_event            ),
+                .out_edges     ( out_edges            ),
+                .t_feature     ( t_feature            ),
+                .f_feature     ( f_feature            ),
+                .p_feature     ( p_feature            ),
+                .out_edge_cnt  ( edge_cnt             )
+            );        
+        end
+        else begin
+            feature_gen #(
+                .T_MULTIPLIER ( GEN_MULTIPLIER_T ),
+                .F_MULTIPLIER ( GEN_MULTIPLIER_F ),
+                .ZERO_POINT   ( GEN_ZERO_POINT   )
+            ) u_feature_gen (
+                .clk           ( clk                  ),
+                .reset         ( reset                ),
+                .in_event      ( event_to_feature_gen ),
+                .in_edges      ( edges_to_feature_gen ),
+                .in_edge_cnt   ( edge_cnt_temp        ),
+                .out_event     ( out_event            ),
+                .out_edges     ( out_edges            ),
+                .t_feature     ( t_feature            ),
+                .f_feature     ( f_feature            ),
+                .p_feature     ( p_feature            ),
+                .out_edge_cnt  ( edge_cnt             )
+            );
+        end   
+    end
+    endgenerate
 
 endmodule

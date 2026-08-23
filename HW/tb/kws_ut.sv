@@ -83,8 +83,8 @@ module kws_ut;
             else begin
                 rst <= 1'b0;
             end
-            #2500 clock_200 <= 1'b0;
-            #2500 clock_200 <= 1'b1;
+            #5000 clock_200 <= 1'b0;
+            #5000 clock_200 <= 1'b1;
         end
     end
 

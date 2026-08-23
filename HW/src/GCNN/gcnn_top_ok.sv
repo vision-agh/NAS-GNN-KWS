@@ -1,0 +1,451 @@
+`timescale 1ns / 1ps
+
+import nas_pkg::*;
+
+module gcnn_top_ok #(
+)( 
+    input logic                       clk,
+    input logic                       reset,
+    input logic [T_WIDTH-1: 0]        t, 
+    input logic [F_WIDTH-1: 0]        f, 
+    input logic                       p,
+    input logic                       is_valid,
+    input  logic [15 : 0]             idx_time,
+    input  logic [T_WIDTH-1 : 0]      last_time,
+    output logic                      is_ready,
+    output logic                      out_valid,
+    output logic [PRECISION_GEN-1 :0] out_conf,
+    output logic [(PRECISION_GEN*CLS_NUM)-1 :0] out_cls
+
+//    output event_type                   event_test,
+//    output edge_type [MAX_EDGES-1:0]    edges_test,
+//    output logic [PRECISION_GEN-1:0]    features_test [OUTPUT_DIM_1-1 : 0]
+);
+
+    localparam string MEMORY_DIR_PATH = "/home/pwz/Repo/OK-FPL/NAS-GNN-KWS/HW/mem/";
+    localparam string INIT_PATH_CONV1 = {MEMORY_DIR_PATH, "conv1.mem"};
+    localparam string INIT_PATH_CONV2_W = {MEMORY_DIR_PATH, "conv2_w.mem"};
+    localparam string INIT_PATH_CONV2_B = {MEMORY_DIR_PATH, "conv2_b.mem"};
+    localparam string INIT_PATH_CONV3_W = {MEMORY_DIR_PATH, "conv3_w.mem"};
+    localparam string INIT_PATH_CONV3_B = {MEMORY_DIR_PATH, "conv3_b.mem"};
+    localparam string INIT_PATH_CONV4_W = {MEMORY_DIR_PATH, "conv4_w.mem"};
+    localparam string INIT_PATH_CONV4_B = {MEMORY_DIR_PATH, "conv4_b.mem"};
+    localparam string INIT_PATH_HEAD = {MEMORY_DIR_PATH, "head.mem"};
+
+    localparam CONV1_MULTIPLIER_DIFF_T = 73024600;
+    localparam CONV1_MULTIPLIER_OUT = 40539932;
+    localparam CONV1_ZERO_POINT_IN = 85;
+    localparam CONV1_ZERO_POINT_OUT = 141;
+    localparam CONV1_ZERO_POINT_WEIGHT = 149;      
+    //localparam logic [7:0] CONV1_SCALE_IN [10:0] = {0, 20, 40, 59, 79, 198, 178, 158, 139, 119, 99};
+    localparam logic [7:0] CONV1_SCALE_IN [10:0] = {0, 17, 34, 51, 68, 170, 153, 136, 119, 102, 85};
+
+    localparam CONV2_MULTIPLIER_DIFF_T = 22750648;
+    localparam CONV2_MULTIPLIER_OUT = 94549432;
+    localparam CONV2_ZERO_POINT_IN = 141;
+    localparam CONV2_ZERO_POINT_OUT = 125;
+    localparam CONV2_ZERO_POINT_WEIGHT = 73;       
+    localparam logic [7:0] CONV2_SCALE_IN [10:0] = {115,120,125,130,136,167,162,157,152,146,141};
+
+    localparam CONV3_MULTIPLIER_DIFF_T = 16436608;
+    localparam CONV3_MULTIPLIER_OUT = 51924164;
+    localparam CONV3_ZERO_POINT_IN = 125;
+    localparam CONV3_ZERO_POINT_OUT = 153;
+    localparam CONV3_ZERO_POINT_WEIGHT = 121;       
+    localparam logic [7:0] CONV3_SCALE_IN [10:0] = {106,110,114,117,121,144,140,136,133,129,125};
+
+    localparam CONV4_MULTIPLIER_DIFF_T = 14870247;
+    localparam CONV4_MULTIPLIER_OUT = 41957212;
+    localparam CONV4_ZERO_POINT_IN = 153;
+    localparam CONV4_ZERO_POINT_OUT = 133;
+    localparam CONV4_ZERO_POINT_WEIGHT = 135;   
+    localparam logic [7:0] CONV4_SCALE_IN [10:0] = {136,139,143,146,150,170,167,163,160,156,153};
+
+    event_type                   event_to_conv1, event_to_conv2, event_to_conv3, event_to_conv4, event_to_pool;
+    event_type                   event_to_buff1, event_to_buff2, event_to_buff3, event_to_buff4;
+    edge_type [MAX_EDGES-1:0]    edges_to_conv1, edges_to_conv2, edges_to_conv3, edges_to_conv4;
+    edge_type [MAX_EDGES-1:0]    edges_to_buff1, edges_to_buff2, edges_to_buff3, edges_to_buff4;
+    logic [PRECISION_GEN-1:0]    f_feature;
+    logic [PRECISION_GEN-1:0]    t_feature;
+    logic [PRECISION_GEN-1:0]    p_feature;
+    logic [PRECISION_GEN-1:0]    features_to_conv1 [INPUT_DIM_1-1 : 0];
+    logic [PRECISION_GEN-1:0]    features_to_buff1 [INPUT_DIM_1-1 : 0];
+    logic [PRECISION_CONV1-1 :0] features_to_conv2 [OUTPUT_DIM_1-1 : 0];
+    logic [PRECISION_CONV1-1 :0] features_to_buff2 [OUTPUT_DIM_1-1 : 0];
+    logic [PRECISION_CONV1-1 :0] features_to_conv3 [OUTPUT_DIM_1-1 : 0];
+    logic [PRECISION_CONV1-1 :0] features_to_buff3 [OUTPUT_DIM_1-1 : 0];
+    logic [PRECISION_CONV2-1 :0] features_to_conv4 [OUTPUT_DIM_2-1 : 0];
+    logic [PRECISION_CONV3-1 :0] features_to_buff4 [OUTPUT_DIM_3-1 : 0];
+    logic [PRECISION_CONV4-1 :0] features_to_pool  [OUTPUT_DIM_4-1 : 0];
+    logic [PRECISION_CONV4-1 :0] features_to_head  [OUTPUT_DIM_4-1 : 0];
+    logic [$clog2(MAX_EDGES) :0] edge_cnt_to_conv1;
+    logic [$clog2(MAX_EDGES) :0] edge_cnt_to_buff1;
+    logic [$clog2(MAX_EDGES) :0] edge_cnt_to_conv2;
+    logic [$clog2(MAX_EDGES) :0] edge_cnt_to_buff2;
+    logic [$clog2(MAX_EDGES) :0] edge_cnt_to_conv3;
+    logic [$clog2(MAX_EDGES) :0] edge_cnt_to_buff3;
+    logic [$clog2(MAX_EDGES) :0] edge_cnt_to_conv4;
+    logic [$clog2(MAX_EDGES) :0] edge_cnt_to_buff4;
+
+    logic gen_valid, gen_next;
+
+    handshake u_handshake (
+        .clk       ( clk                   ),
+        .reset     ( reset                 ),
+        .is_ready  ( is_ready              ),
+        .is_valid  ( is_valid              ),
+        .out_valid ( gen_valid             ),
+        .get_next  ( event_to_conv1.valid  )
+    );
+
+    generate_graph #(
+        .OK         ( IS_OK )
+    ) u_gen_graph (
+        .clk        ( clk                ),
+        .reset      ( reset              ),
+        .t          ( t                  ),
+        .f          ( f                  ),
+        .p          ( p                  ),
+        .is_valid   ( gen_valid          ),
+        .out_event  ( event_to_buff1    ),
+        .out_edges  ( edges_to_buff1    ),
+        .t_feature  ( t_feature          ),
+        .f_feature  ( f_feature          ),
+        .p_feature  ( p_feature          ),
+        .edge_cnt   ( edge_cnt_to_buff1 )
+    );
+
+    logic buff2_empty, buff2_empty_reg, buff3_empty, buff4_empty;
+    assign features_to_buff1[0] = t_feature;
+    assign features_to_buff1[1] = f_feature;
+    assign features_to_buff1[2] = p_feature;
+
+    buffer #(
+        .FEATURE_DIM  ( INPUT_DIM_1 )
+    ) u_buff1 (
+        .clk          ( clk                     ),
+        .reset        ( reset                   ),
+        .in_event     ( event_to_buff1          ),
+        .in_edges     ( edges_to_buff1          ),
+        .in_features  ( features_to_buff1       ),
+        .in_edge_cnt  ( edge_cnt_to_buff1       ),
+        .out_event    ( event_to_conv1          ),
+        .out_edges    ( edges_to_conv1          ),
+        .out_features ( features_to_conv1       ),
+        .out_edge_cnt ( edge_cnt_to_conv1       ),
+        .get_next     ( event_to_conv2.valid )
+    );
+
+     convolution_ok #(
+         .PRECISION_IN      ( PRECISION_GEN           ),
+         .PRECISION_OUT     ( PRECISION_CONV1         ),
+         .INPUT_DIM         ( INPUT_DIM_1             ),
+         .OUTPUT_DIM        ( OUTPUT_DIM_1            ),
+         .MULTIPLIER_DIFF_T ( CONV1_MULTIPLIER_DIFF_T ),
+         .ZERO_POINT_IN     ( CONV1_ZERO_POINT_IN     ),
+         .ZERO_POINT_OUT    ( CONV1_ZERO_POINT_OUT    ),
+         .MULTIPLIER_OUT    ( CONV1_MULTIPLIER_OUT    ),
+         .ZERO_POINT_WEIGHT ( CONV1_ZERO_POINT_WEIGHT ),
+         .SCALE_IN          ( CONV1_SCALE_IN          ),
+         .INIT_PATH         ( INIT_PATH_CONV1         )
+     ) u_conv1 (
+         .clk          ( clk               ),
+         .reset        ( reset             ),
+         .in_event     ( event_to_conv1    ),
+         .in_edges     ( edges_to_conv1    ),
+         .in_features  ( features_to_conv1 ),
+         .in_edge_cnt  ( edge_cnt_to_conv1 ),
+         .out_event    ( event_to_buff2    ),
+         .out_edges    ( edges_to_buff2    ),
+         .out_features ( features_to_buff2 ),
+         .out_edge_cnt ( edge_cnt_to_buff2 )
+     );
+
+
+//    // for simulation purposed
+//    integer fd;
+//    int CLK_CNT = 0;
+//    initial begin
+//        fd = $fopen("output.txt", "w");
+//        if (fd == 0) begin
+//            $display("Nie można otworzyć pliku!");
+//            $finish;
+//        end
+//    end
+
+//    always @(posedge clk) begin
+//        if (event_to_buff2.valid) begin
+//            for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
+//                $fwrite(fd, "%0d, ", features_to_buff2[i]);
+//            end
+//            $fdisplay(fd, "%0d", features_to_buff2[nas_pkg::OUTPUT_DIM_1-1]);
+//        end
+//        CLK_CNT <= CLK_CNT+1;
+//        // 1sek = 200000000
+//        if (CLK_CNT > 1_000_000) begin
+//            $fclose(fd);
+//            $finish;
+//        end
+//    end
+//    // for simulation purposed
+
+
+    buffer #(
+        .FEATURE_DIM  ( OUTPUT_DIM_1 )
+    ) u_buff2 (
+        .clk          ( clk                  ),
+        .reset        ( reset                ),
+        .in_event     ( event_to_buff2       ),
+        .in_edges     ( edges_to_buff2       ),
+        .in_features  ( features_to_buff2    ),
+        .in_edge_cnt  ( edge_cnt_to_buff2    ),
+        .out_event    ( event_to_conv2       ),
+        .out_edges    ( edges_to_conv2       ),
+        .out_features ( features_to_conv2    ),
+        .out_edge_cnt ( edge_cnt_to_conv2    ),
+        .get_next     ( event_to_conv3.valid )
+
+    );
+
+      convolution_sparse_ok #(
+          .PRECISION_IN      ( PRECISION_CONV1         ),
+          .PRECISION_OUT     ( PRECISION_CONV2         ),
+          .INPUT_DIM         ( OUTPUT_DIM_1            ),
+          .OUTPUT_DIM        ( OUTPUT_DIM_2            ),
+          .MULTIPLIER_DIFF_T ( CONV2_MULTIPLIER_DIFF_T ),
+          .ZERO_POINT_IN     ( CONV2_ZERO_POINT_IN     ),
+          .ZERO_POINT_OUT    ( CONV2_ZERO_POINT_OUT    ),
+          .MULTIPLIER_OUT    ( CONV2_MULTIPLIER_OUT    ),
+          .ZERO_POINT_WEIGHT ( CONV2_ZERO_POINT_WEIGHT ),
+          .SCALE_IN          ( CONV2_SCALE_IN          ),
+          .INIT_PATH_W       ( INIT_PATH_CONV2_W       ),
+          .INIT_PATH_B       ( INIT_PATH_CONV2_B       )
+      ) u_conv2 (
+          .clk          ( clk               ),
+          .reset        ( reset             ),
+          .in_event     ( event_to_conv2    ),
+          .in_edges     ( edges_to_conv2    ),
+          .in_features  ( features_to_conv2 ),
+          .in_edge_cnt  ( edge_cnt_to_conv2 ),
+          .out_event    ( event_to_buff3    ),
+          .out_edges    ( edges_to_buff3    ),
+          .out_features ( features_to_buff3 ),
+          .out_edge_cnt ( edge_cnt_to_buff3 )
+      );
+
+//    // for simulation purposed
+//    integer fd2;
+//    int CLK_CNT = 0;
+//    initial begin
+//        fd2 = $fopen("output2.txt", "w");
+//        if (fd2 == 0) begin
+//            $display("Nie można otworzyć pliku!");
+//            $finish;
+//        end
+//    end
+
+//    always @(posedge clk) begin
+//        if (event_to_buff3.valid) begin
+//            for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
+//                $fwrite(fd2, "%0d, ", features_to_buff3[i]);
+//            end
+//            $fdisplay(fd2, "%0d", features_to_buff3[nas_pkg::OUTPUT_DIM_1-1]);
+//        end
+//        CLK_CNT <= CLK_CNT+1;
+//        // 1sek = 200000000
+//        if (CLK_CNT > 1_000_000) begin
+//            $fclose(fd2);
+//            $finish;
+//        end
+//    end
+//    // for simulation purposed
+
+
+
+    buffer #(
+        .FEATURE_DIM  ( OUTPUT_DIM_2 )
+    ) u_buff3 (
+        .clk          ( clk                  ),
+        .reset        ( reset                ),
+        .in_event     ( event_to_buff3       ),
+        .in_edges     ( edges_to_buff3       ),
+        .in_features  ( features_to_buff3    ),
+        .in_edge_cnt  ( edge_cnt_to_buff3    ),
+        .out_event    ( event_to_conv3       ),
+        .out_edges    ( edges_to_conv3       ),
+        .out_features ( features_to_conv3    ),
+        .out_edge_cnt ( edge_cnt_to_conv3    ),
+        .get_next     ( event_to_conv4.valid )
+
+    );
+
+     convolution_sparse_ok #(
+         .PRECISION_IN      ( PRECISION_CONV2         ),
+         .PRECISION_OUT     ( PRECISION_CONV3         ),
+         .INPUT_DIM         ( OUTPUT_DIM_2            ),
+         .OUTPUT_DIM        ( OUTPUT_DIM_3            ),
+         .MULTIPLIER_DIFF_T ( CONV3_MULTIPLIER_DIFF_T ),
+         .ZERO_POINT_IN     ( CONV3_ZERO_POINT_IN     ),
+         .ZERO_POINT_OUT    ( CONV3_ZERO_POINT_OUT    ),
+         .MULTIPLIER_OUT    ( CONV3_MULTIPLIER_OUT    ),
+         .ZERO_POINT_WEIGHT ( CONV3_ZERO_POINT_WEIGHT ),
+         .SCALE_IN          ( CONV3_SCALE_IN          ),
+         .INIT_PATH_W       ( INIT_PATH_CONV3_W       ),
+         .INIT_PATH_B       ( INIT_PATH_CONV3_B       )
+      ) u_conv3 (
+          .clk          ( clk               ),
+          .reset        ( reset             ),
+          .in_event     ( event_to_conv3    ),
+          .in_edges     ( edges_to_conv3    ),
+          .in_features  ( features_to_conv3 ),
+          .in_edge_cnt  ( edge_cnt_to_conv3 ),
+          .out_event    ( event_to_buff4    ),
+          .out_edges    ( edges_to_buff4    ),
+          .out_features ( features_to_buff4 ),
+          .out_edge_cnt ( edge_cnt_to_buff4 )
+      );
+
+//    // for simulation purposed
+//    integer fd;
+//    int CLK_CNT = 0;
+//    initial begin
+//        fd = $fopen("output4.txt", "w");
+//        if (fd == 0) begin
+//            $display("Nie można otworzyć pliku!");
+//            $finish;
+//        end
+//    end
+
+//    always @(posedge clk) begin
+//        if (event_to_buff4.valid) begin
+//            for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
+//                $fwrite(fd, "%0d, ", features_to_buff4[i]);
+//            end
+//            $fdisplay(fd, "%0d", features_to_buff4[nas_pkg::OUTPUT_DIM_1-1]);
+//        end
+//        CLK_CNT <= CLK_CNT+1;
+//        // 1sek = 100_000_000
+//        if (CLK_CNT > 100_000) begin
+//            $fclose(fd);
+//            //$fclose(fd2);
+//            $finish;
+//        end
+//    end
+//    // for simulation purposed
+
+
+    buffer #(
+        .FEATURE_DIM  ( OUTPUT_DIM_3 )
+    ) u_buff4 (
+        .clk          ( clk                 ),
+        .reset        ( reset               ),
+        .in_event     ( event_to_buff4      ),
+        .in_edges     ( edges_to_buff4      ),
+        .in_features  ( features_to_buff4   ),
+        .in_edge_cnt  ( edge_cnt_to_buff4   ),
+        .out_event    ( event_to_conv4      ),
+        .out_edges    ( edges_to_conv4      ),
+        .out_features ( features_to_conv4   ),
+        .out_edge_cnt ( edge_cnt_to_conv4   ),
+        .get_next     ( event_to_pool.valid )
+
+    );
+
+     convolution_sparse_ok #(
+         .PRECISION_IN      ( PRECISION_CONV3         ),
+         .PRECISION_OUT     ( PRECISION_CONV4         ),
+         .INPUT_DIM         ( OUTPUT_DIM_3            ),
+         .OUTPUT_DIM        ( OUTPUT_DIM_4            ),
+         .MULTIPLIER_DIFF_T ( CONV4_MULTIPLIER_DIFF_T ),
+         .ZERO_POINT_IN     ( CONV4_ZERO_POINT_IN     ),
+         .ZERO_POINT_OUT    ( CONV4_ZERO_POINT_OUT    ),
+         .MULTIPLIER_OUT    ( CONV4_MULTIPLIER_OUT    ),
+         .ZERO_POINT_WEIGHT ( CONV4_ZERO_POINT_WEIGHT ),
+         .SCALE_IN          ( CONV4_SCALE_IN          ),
+         .INIT_PATH_W       ( INIT_PATH_CONV4_W       ),
+         .INIT_PATH_B       ( INIT_PATH_CONV4_B       )
+     ) u_conv4 (
+         .clk          ( clk               ),
+         .reset        ( reset             ),
+         .in_event     ( event_to_conv4    ),
+         .in_edges     ( edges_to_conv4    ),
+         .in_features  ( features_to_conv4 ),
+         .in_edge_cnt  ( edge_cnt_to_conv4 ),
+//         .out_event    ( event_test    ),
+//         .out_edges    ( edges_test    ),
+//         .out_features ( features_test )
+         .out_event    ( event_to_pool     ),
+         .out_edges    (                   ),
+         .out_features ( features_to_pool  ),
+         .out_edge_cnt (                   )
+     );
+
+     logic head_valid;
+
+    // for simulation purposed
+    integer fd;
+    int CLK_CNT = 0;
+    initial begin
+        fd = $fopen("output4.txt", "w");
+        if (fd == 0) begin
+            $display("Nie można otworzyć pliku!");
+            $finish;
+        end
+    end
+
+    always @(posedge clk) begin
+        if (event_to_pool.valid) begin
+            for (int i = 0; i < nas_pkg::OUTPUT_DIM_1-1; i=i+1) begin
+                $fwrite(fd, "%0d, ", features_to_pool[i]);
+            end
+            $fdisplay(fd, "%0d", features_to_pool[nas_pkg::OUTPUT_DIM_1-1]);
+        end
+        CLK_CNT <= CLK_CNT+1;
+        // 1sek = 100_000_000
+        if (CLK_CNT > 10_005_000) begin
+            $fclose(fd);
+            //$fclose(fd2);
+            $finish;
+        end
+    end
+    // for simulation purposed
+
+
+
+     maxpool #(
+         .ZERO_POINT ( CONV4_ZERO_POINT_OUT )
+     ) u_pool (
+         .clk          ( clk              ),
+         .reset        ( reset            ),
+         .last_time    ( last_time        ),
+         .idx_time     ( idx_time         ),
+         .in_event     ( event_to_pool    ),
+         .in_features  ( features_to_pool ),
+         .out_features ( features_to_head ),
+         .out_valid    ( head_valid       )
+      );
+
+    logic [(PRECISION_GEN)-1 :0] out_cls_reg [CLS_NUM-1:0];
+
+     gru_head_ok #(
+         .INIT_PATH ( INIT_PATH_HEAD )
+     ) u_head (
+         .clk         ( clk              ),
+         .reset       ( reset            ),
+         .in_valid    ( head_valid       ),
+         .in_features ( features_to_head ),
+         .out_conf    ( out_conf         ),
+         .out_cls     ( out_cls_reg      ),
+         .out_valid   ( out_valid        )
+      );
+
+
+    genvar i;
+    generate begin
+        for(i = 0; i< CLS_NUM; i++) begin  : assign_out
+            assign out_cls[((i+1)*PRECISION_GEN)-1 : (i*PRECISION_GEN)] = out_cls_reg[i];
+        end
+    end
+    endgenerate
+
+endmodule : gcnn_top_ok
