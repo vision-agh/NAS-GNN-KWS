@@ -11,10 +11,11 @@ set_property board_part opalkelly.com:xem7310-a200:part0:1.0 [current_project]
 add_files $repo_root/HW/src/NAS
 add_files $repo_root/HW/src/REC
 
-import_files $repo_root/HW/ip/ok/clk_wiz_for_rec/clk_wiz_0.xci
+add_files $repo_root/HW/ip/ok/clk_wiz_for_rec/clk_wiz_0.xci
 
 set all_ips [get_ips]
 if {$all_ips ne ""} {
+    upgrade_ip $all_ips
     reset_target all $all_ips
     generate_target all $all_ips
 }
