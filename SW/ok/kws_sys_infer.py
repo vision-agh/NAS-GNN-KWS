@@ -15,8 +15,15 @@ sd.default.dtype = 'float32'
 sd.default.latency = ('high', 'high')
 sd.default.blocksize = 2048
 
-BIT_FILE = "C:/Users/wikto/repos/NAS-GNN-KWS/HW/vivado/kws/kws_system.runs/impl_1/ok_top_wrapper.bit"
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+BIT_FILE = os.path.join(REPO_ROOT, "HW", "vivado", "kws", "kws_system.runs", "impl_1", "ok_top_wrapper.bit")
 DATASET_ROOT = "C:/Users/wikto/datasets/gsc_v2"
+
+
+CSV_DIR = "batch_analysis_all_classes"
+STATS_DIR = "stats_all_classes"
 
 WORDS_COMM = [
     "yes", "no", "up", "down", "left",
@@ -25,8 +32,11 @@ WORDS_COMM = [
 
 CLASSES_TO_TEST = ["down", "up", "go", "no", "yes", "stop", "left", "right", "on", "off"]
 NUM_SAMPLES_TO_TEST = 100
-CONFIDENCE_THRESHOLD = 100
+CONFIDENCE_THRESHOLD = 150
 CAPTURE_WINDOW_S = 2.0
+
+os.makedirs(CSV_DIR, exist_ok=True)
+os.makedirs(STATS_DIR, exist_ok=True)
 
 devices = ok.FrontPanelDevices()
 dev = devices.Open("")
@@ -187,7 +197,7 @@ def analyze_class_batch(target_class, num_samples, confidence_threshold=CONFIDEN
         batch_results.append([wav_name, len(high_conf_frames), top_1, top_2, top_3])
         time.sleep(0.1)
 
-    csv_filename = f"batch_analysis_{target_class}.csv"
+    csv_filename = os.path.join(CSV_DIR, f"batch_analysis_{target_class}.csv")
     with open(csv_filename, mode='w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['Sample Name', 'High-Conf Frames', 'Top 1 Class', 'Top 2 Class', 'Top 3 Class'])
@@ -201,7 +211,7 @@ def analyze_class_batch(target_class, num_samples, confidence_threshold=CONFIDEN
     total_skipped_frames = total_frames_seen - total_valid_frames
     skip_rate_pct = (total_skipped_frames / total_frames_seen * 100) if total_frames_seen else 0
 
-    stats_filename = f"stats_{target_class}.txt"
+    stats_filename = os.path.join(STATS_DIR, f"stats_{target_class}.txt")
     with open(stats_filename, mode='w') as f:
         f.write(f"--- Statistics for Class: '{target_class}' ---\n")
         f.write(f"Total samples tested: {len(samples_to_run)}\n")
@@ -212,93 +222,6 @@ def analyze_class_batch(target_class, num_samples, confidence_threshold=CONFIDEN
         f.write(f"Average valid frames per sample: {avg_valid_frames:.2f}\n")
         f.write(f"Average skipped frames per sample (confidence <= {confidence_threshold}): {avg_skipped_frames:.2f}\n")
         f.write(f"Frame skip rate: {skip_rate_pct:.2f}%\n\n")
-
-        write_distribution(f, "Top-1 Class Distribution", top1_distribution, valid_samples)
-        write_distribution(f, "Top-2 Class Distribution", top2_distribution, valid_samples)
-        write_distribution(f, "Top-3 Class Distribution", top3_distribution, valid_samples)
-
-    print(f"\nBatch analysis complete. Results saved to '{csv_filename}'.")
-    print(f"Statistics saved to '{stats_filename}'.")
-    class_folder = os.path.join(DATASET_ROOT, target_class)
-
-    if not os.path.exists(class_folder):
-        print(f"Error: Directory {class_folder} does not exist.")
-        return
-
-    all_wavs = [f for f in os.listdir(class_folder) if f.endswith('.wav')]
-    if len(all_wavs) == 0:
-        print(f"No .wav files found in {class_folder}")
-        return
-
-    samples_to_run = random.sample(all_wavs, min(num_samples, len(all_wavs)))
-    print(f"\n=======================================================")
-    print(f" Starting Batch Analysis: '{target_class}' ({len(samples_to_run)} samples)")
-    print(f"=======================================================\n")
-
-    batch_results = []
-    top1_distribution = {}
-    top2_distribution = {}
-    top3_distribution = {}
-    valid_frame_counts = []
-    skipped_count = 0
-
-    for idx, wav_name in enumerate(samples_to_run):
-        wav_path = os.path.join(class_folder, wav_name)
-        print(f"[{idx+1}/{len(samples_to_run)}] Processing: {wav_name}...")
-
-        try:
-            frames = run_pipe_inference(wav_path)
-        except Exception as e:
-            print(f"    -> Error processing {wav_name}: {e}")
-            batch_results.append([wav_name, 0, "Error", "Error", "Error"])
-            skipped_count += 1
-            continue
-
-        high_conf_frames = [f for f in frames if f["confidence"] > confidence_threshold]
-        valid_frame_counts.append(len(high_conf_frames))
-
-        if len(high_conf_frames) == 0:
-            top_1, top_2, top_3 = "None", "None", "None"
-            skipped_count += 1
-            print(f"    -> Skipped (No frames exceeded {confidence_threshold} confidence)")
-        else:
-            avg_scores = [0] * 11
-            for frame in high_conf_frames:
-                for class_idx in range(11):
-                    avg_scores[class_idx] += frame["scores"][class_idx]
-
-            avg_scores = [score / len(high_conf_frames) for score in avg_scores]
-            ranked_classes = sorted(range(11), key=lambda i: avg_scores[i], reverse=True)
-
-            top_1 = WORDS_COMM[ranked_classes[0]]
-            top_2 = WORDS_COMM[ranked_classes[1]]
-            top_3 = WORDS_COMM[ranked_classes[2]]
-
-            top1_distribution[top_1] = top1_distribution.get(top_1, 0) + 1
-            top2_distribution[top_2] = top2_distribution.get(top_2, 0) + 1
-            top3_distribution[top_3] = top3_distribution.get(top_3, 0) + 1
-
-            print(f"    -> Valid Frames: {len(high_conf_frames)} | Top 1: {top_1} | Top 2: {top_2} | Top 3: {top_3}")
-
-        batch_results.append([wav_name, len(high_conf_frames), top_1, top_2, top_3])
-        time.sleep(0.1)
-
-    csv_filename = f"batch_analysis_{target_class}.csv"
-    with open(csv_filename, mode='w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(['Sample Name', 'High-Conf Frames', 'Top 1 Class', 'Top 2 Class', 'Top 3 Class'])
-        writer.writerows(batch_results)
-
-    valid_samples = len(samples_to_run) - skipped_count
-    avg_valid_frames_all = sum(valid_frame_counts) / len(valid_frame_counts) if valid_frame_counts else 0
-
-    stats_filename = f"stats_{target_class}.txt"
-    with open(stats_filename, mode='w') as f:
-        f.write(f"--- Statistics for Class: '{target_class}' ---\n")
-        f.write(f"Total samples tested: {len(samples_to_run)}\n")
-        f.write(f"Skipped (Confidence <= {confidence_threshold}): {skipped_count}\n")
-        f.write(f"Valid samples: {valid_samples}\n")
-        f.write(f"Average valid frames (all samples): {avg_valid_frames_all:.2f}\n")
 
         write_distribution(f, "Top-1 Class Distribution", top1_distribution, valid_samples)
         write_distribution(f, "Top-2 Class Distribution", top2_distribution, valid_samples)
