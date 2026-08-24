@@ -32,7 +32,7 @@ WORDS_COMM = [
 
 CLASSES_TO_TEST = ["down", "up", "go", "no", "yes", "stop", "left", "right", "on", "off"]
 NUM_SAMPLES_TO_TEST = 100
-CONFIDENCE_THRESHOLD = 150
+CONFIDENCE_THRESHOLD = 170
 CAPTURE_WINDOW_S = 2.0
 
 os.makedirs(CSV_DIR, exist_ok=True)
@@ -135,12 +135,12 @@ def analyze_class_batch(target_class, num_samples, confidence_threshold=CONFIDEN
 
     if not os.path.exists(class_folder):
         print(f"Error: Directory {class_folder} does not exist.")
-        return
+        return None
 
     all_wavs = [f for f in os.listdir(class_folder) if f.endswith('.wav')]
     if len(all_wavs) == 0:
         print(f"No .wav files found in {class_folder}")
-        return
+        return None
 
     samples_to_run = random.sample(all_wavs, min(num_samples, len(all_wavs)))
     print(f"\n=======================================================")
@@ -155,6 +155,7 @@ def analyze_class_batch(target_class, num_samples, confidence_threshold=CONFIDEN
     zero_valid_sample_count = 0
     error_count = 0
     frames_per_sample = 200
+    correct_recognition_count = 0 
 
     for idx, wav_name in enumerate(samples_to_run):
         wav_path = os.path.join(class_folder, wav_name)
@@ -192,6 +193,9 @@ def analyze_class_batch(target_class, num_samples, confidence_threshold=CONFIDEN
             top2_distribution[top_2] = top2_distribution.get(top_2, 0) + 1
             top3_distribution[top_3] = top3_distribution.get(top_3, 0) + 1
 
+            if top_1 == target_class or (top_1 == "unknown" and top_2 == target_class):
+                correct_recognition_count += 1
+
             print(f"    -> Valid Frames: {len(high_conf_frames)} | Top 1: {top_1} | Top 2: {top_2} | Top 3: {top_3}")
 
         batch_results.append([wav_name, len(high_conf_frames), top_1, top_2, top_3])
@@ -204,6 +208,8 @@ def analyze_class_batch(target_class, num_samples, confidence_threshold=CONFIDEN
         writer.writerows(batch_results)
 
     valid_samples = len(samples_to_run) - zero_valid_sample_count - error_count
+    accuracy_pct = (correct_recognition_count / valid_samples * 100) if valid_samples > 0 else 0
+
     avg_valid_frames = sum(valid_frame_counts) / len(valid_frame_counts) if valid_frame_counts else 0
     avg_skipped_frames = frames_per_sample - avg_valid_frames
     total_frames_seen = len(valid_frame_counts) * frames_per_sample
@@ -218,6 +224,8 @@ def analyze_class_batch(target_class, num_samples, confidence_threshold=CONFIDEN
         f.write(f"Samples with errors: {error_count}\n")
         f.write(f"Samples with zero valid frames: {zero_valid_sample_count}\n")
         f.write(f"Valid samples: {valid_samples}\n\n")
+        f.write(f"Correctly recognized samples: {correct_recognition_count}\n")
+        f.write(f"Accuracy (Correct / Valid): {accuracy_pct:.2f}%\n\n")
         f.write(f"Frames per sample (raw): {frames_per_sample}\n")
         f.write(f"Average valid frames per sample: {avg_valid_frames:.2f}\n")
         f.write(f"Average skipped frames per sample (confidence <= {confidence_threshold}): {avg_skipped_frames:.2f}\n")
@@ -230,5 +238,40 @@ def analyze_class_batch(target_class, num_samples, confidence_threshold=CONFIDEN
     print(f"\nBatch analysis complete. Results saved to '{csv_filename}'.")
     print(f"Statistics saved to '{stats_filename}'.")
 
+    return {
+        "class": target_class,
+        "total_tested": len(samples_to_run),
+        "valid_samples": valid_samples,
+        "correct": correct_recognition_count,
+        "accuracy_pct": accuracy_pct
+    }
+
+summary_records = []
+
 for target in CLASSES_TO_TEST:
-    analyze_class_batch(target, NUM_SAMPLES_TO_TEST)
+    res = analyze_class_batch(target, NUM_SAMPLES_TO_TEST)
+    if res:
+        summary_records.append(res)
+
+summary_filename = os.path.join(STATS_DIR, "accuracy_summary.txt")
+total_tested_all = sum(r["total_tested"] for r in summary_records)
+total_valid_all = sum(r["valid_samples"] for r in summary_records)
+total_correct_all = sum(r["correct"] for r in summary_records)
+mean_accuracy = (total_correct_all / total_valid_all * 100) if total_valid_all > 0 else 0
+
+with open(summary_filename, mode='w') as f:
+    f.write("========================================================================\n")
+    f.write(f" ACCURACY SUMMARY REPORT (Threshold: {CONFIDENCE_THRESHOLD}, Samples/Class: {NUM_SAMPLES_TO_TEST})\n")
+    f.write("========================================================================\n\n")
+    f.write(f"{'Class':<12} | {'Tested':<8} | {'Valid':<8} | {'Correct':<8} | {'Accuracy':<10}\n")
+    f.write("-" * 56 + "\n")
+
+    for r in summary_records:
+        f.write(f"{r['class']:<12} | {r['total_tested']:<8} | {r['valid_samples']:<8} | {r['correct']:<8} | {r['accuracy_pct']:>7.2f}%\n")
+
+    f.write("-" * 56 + "\n")
+    f.write(f"{'TOTAL / MEAN':<12} | {total_tested_all:<8} | {total_valid_all:<8} | {total_correct_all:<8} | {mean_accuracy:>7.2f}%\n")
+
+print("\n" + "=" * 56)
+print(f"Overall Accuracy Summary saved to '{summary_filename}'.")
+print("=" * 56)
