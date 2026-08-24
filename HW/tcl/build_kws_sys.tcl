@@ -11,7 +11,13 @@ if {![file exists $fp_marker]} {
     puts "FrontPanel IP not found — downloading v1.1.0..."
     file mkdir $fp_ip_dir
     exec curl -s -L -o $fp_zip $fp_url
-    exec powershell -Command "Expand-Archive -Path '$fp_zip' -DestinationPath '$fp_ip_dir' -Force"
+    
+    if {$::tcl_platform(platform) eq "windows"} {
+        exec powershell -Command "Expand-Archive -Path '$fp_zip' -DestinationPath '$fp_ip_dir' -Force"
+    } else {
+        exec unzip -o $fp_zip -d $fp_ip_dir
+    }
+    
     file delete $fp_zip
     puts "FrontPanel IP installed."
 }
@@ -26,7 +32,8 @@ set_property ip_repo_paths $repo_root/HW/ip/fp/IP [current_project]
 update_ip_catalog
 
 add_files $repo_root/HW/src/NAS
-add_files $repo_root/HW/src/GCNN
+add_files [glob $repo_root/HW/src/GCNN/*.sv]
+add_files [glob $repo_root/HW/src/GCNN/*.v]
 add_files $repo_root/HW/src/board_wrapper_files/ok_top_wrapper.sv
 
 add_files $repo_root/HW/src/KWS.vhd
@@ -50,6 +57,7 @@ add_files [glob $repo_root/HW/mem/*.mem]
 
 set all_ips [get_ips]
 if {$all_ips ne ""} {
+    upgrade_ip $all_ips
     reset_target all $all_ips
     generate_target all $all_ips
 }

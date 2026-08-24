@@ -165,3 +165,9 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# Opal Kelly files
+ok/batch_analysis_all_classes/
+ok/stats_all_classes/
+ok/ok.py
+ok/okFrontPanel.dll

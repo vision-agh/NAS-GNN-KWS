@@ -22,15 +22,14 @@ module gcnn_top_ok #(
 //    output logic [PRECISION_GEN-1:0]    features_test [OUTPUT_DIM_1-1 : 0]
 );
 
-    localparam string MEMORY_DIR_PATH = "/home/pwz/Repo/OK-FPL/NAS-GNN-KWS/HW/mem/";
-    localparam string INIT_PATH_CONV1 = {MEMORY_DIR_PATH, "conv1.mem"};
-    localparam string INIT_PATH_CONV2_W = {MEMORY_DIR_PATH, "conv2_w.mem"};
-    localparam string INIT_PATH_CONV2_B = {MEMORY_DIR_PATH, "conv2_b.mem"};
-    localparam string INIT_PATH_CONV3_W = {MEMORY_DIR_PATH, "conv3_w.mem"};
-    localparam string INIT_PATH_CONV3_B = {MEMORY_DIR_PATH, "conv3_b.mem"};
-    localparam string INIT_PATH_CONV4_W = {MEMORY_DIR_PATH, "conv4_w.mem"};
-    localparam string INIT_PATH_CONV4_B = {MEMORY_DIR_PATH, "conv4_b.mem"};
-    localparam string INIT_PATH_HEAD = {MEMORY_DIR_PATH, "head.mem"};
+    localparam string INIT_PATH_CONV1   = "conv1.mem";
+    localparam string INIT_PATH_CONV2_W = "conv2_w.mem";
+    localparam string INIT_PATH_CONV2_B = "conv2_b.mem";
+    localparam string INIT_PATH_CONV3_W = "conv3_w.mem";
+    localparam string INIT_PATH_CONV3_B = "conv3_b.mem";
+    localparam string INIT_PATH_CONV4_W = "conv4_w.mem";
+    localparam string INIT_PATH_CONV4_B = "conv4_b.mem";
+    localparam string INIT_PATH_HEAD    = "head.mem";
 
     localparam CONV1_MULTIPLIER_DIFF_T = 73024600;
     localparam CONV1_MULTIPLIER_OUT = 40539932;

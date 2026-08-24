@@ -1,5 +1,4 @@
 set tcl_dir [file dirname [info script]]
-source [file join $tcl_dir "build_nas_rec.tcl"]
 
 puts "Running synthesis..."
 launch_runs synth_1 -jobs 10
