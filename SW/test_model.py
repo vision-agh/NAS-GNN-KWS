@@ -21,13 +21,13 @@ def move_to_device(batch, dev):
 
 # Prepare dataset
 files = glob.glob(
-    f"/home/imperator/Dataset/gsc_v2_32p_ok/*/*"    # or select class e.g. stop here
+    f"/home/imperator/Dataset/vox-gscd/left/*"    # or select class e.g. stop here
 )
 
 # shuffle files for testing
 random.shuffle(files)
 
-cfg = OmegaConf.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P/CHECKPOINTS/config.yaml')
+cfg = OmegaConf.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_Vox/CHECKPOINTS/config.yaml')
 OmegaConf.resolve(cfg)
 
 print(cfg)
@@ -35,7 +35,7 @@ ds = SpikingDS(files, cfg)
 
 # Prepare model
 model = KWS(cfg).to('cuda')
-ckpt = torch.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_32P/CHECKPOINTS/best_model_calibration.pth')
+ckpt = torch.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_Vox/CHECKPOINTS/best_model_calibration.pth')
 model.load_state_dict(ckpt)
 model.eval()
 
@@ -57,7 +57,7 @@ for data in ds:
     plt.scatter(pos[:, 0], pos[:, 1], s=1, alpha=0.5)
     vec_time = np.linspace(0, 1, conf.shape[1])
     plt.plot(vec_time, conf[0], label='Conf', color='red')
-    for i in range(11):
+    for i in range(5):
         plt.plot(vec_time, cls[0,i,:].cpu().detach().numpy(), label=WORDS_COMM[i], linestyle='--', color=plt.cm.tab10(i))
     plt.yticks([])
     plt.legend()
