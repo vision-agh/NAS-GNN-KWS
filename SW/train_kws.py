@@ -78,7 +78,23 @@ torch.backends.cudnn.benchmark = False
 # -------------------------------------------------
 # 2. Files & split
 # -------------------------------------------------
-dataset_root = Path.home() / "Dataset" / "gsc_v2_32p_ok"
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset_cfg", type=str, default="configs/dataset.yaml")
+parser.add_argument("--nas_cfg", type=str, default="configs/nas.yaml")
+parser.add_argument("--model_cfg", type=str, default="configs/kws.yaml")
+parser.add_argument("--dataset_root", type=str, default=None,
+                     help="Override the default dataset root (e.g. to point at a new recording set).")
+parser.add_argument("--resume_ckpt", type=str, default=None,
+                     help="Path to a model checkpoint (state_dict) to resume training from.")
+parser.add_argument("--start_epoch", type=int, default=0,
+                     help="Epoch already completed by --resume_ckpt (0-indexed count of finished epochs). "
+                          "Used to pick up the cosine LR schedule where it left off and to shorten the "
+                          "remaining main-training loop.")
+
+# everything unknown becomes override key=value
+args, overrides = parser.parse_known_args()
+
+dataset_root = Path(args.dataset_root) if args.dataset_root else (Path.home() / "Dataset" / "gsc_v2_32p_ok")
 files = glob.glob(str(dataset_root / "*" / "*"))
 
 # Filter out anything that is not a file (defensive)
@@ -90,6 +106,13 @@ validation_list = np.loadtxt(dataset_root / "validation_list.txt", dtype=str)
 # np.loadtxt returns a scalar string if file has exactly one line -> make robust
 testing_list = np.atleast_1d(testing_list).tolist()
 validation_list = np.atleast_1d(validation_list).tolist()
+
+# Some dataset variants (e.g. vox populi recordings) list entries as
+# "class/name.wav.aedat" instead of "class/name.wav" like gsc_v2_32p_ok.
+# Normalize away a trailing ".aedat" so keys match file_key() below regardless
+# of which convention the dataset root uses.
+testing_list = [s[:-len(".aedat")] if s.endswith(".aedat") else s for s in testing_list]
+validation_list = [s[:-len(".aedat")] if s.endswith(".aedat") else s for s in validation_list]
 
 testing_set = set(testing_list)
 validation_set = set(validation_list)
@@ -126,14 +149,6 @@ print(
 # -------------------------------------------------
 # 3. Dataset
 # -------------------------------------------------
-parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_cfg", type=str, default="configs/dataset.yaml")
-parser.add_argument("--nas_cfg", type=str, default="configs/nas.yaml")
-parser.add_argument("--model_cfg", type=str, default="configs/kws.yaml")
-
-# everything unknown becomes override key=value
-args, overrides = parser.parse_known_args()
-
 cfg = build_config(
     dataset_cfg_path=args.dataset_cfg,
     nas_cfg_path=args.nas_cfg,
@@ -193,6 +208,10 @@ val_dl = DataLoader(
 # -------------------------------------------------
 model = KWS(cfg).to(device)
 
+if args.resume_ckpt:
+    print(f"Resuming model weights from: {args.resume_ckpt} (start_epoch={args.start_epoch})")
+    model.load_state_dict(torch.load(args.resume_ckpt, map_location=device))
+
 total_params, trainable_params = count_parameters(model)
 
 
@@ -218,6 +237,10 @@ wandb_config = {
     "batch_size": BATCH_SIZE,
     "num_workers": NUM_WORKERS,
     "pin_memory": PIN_MEMORY,
+
+    # resume
+    "resume_ckpt": args.resume_ckpt,
+    "start_epoch": args.start_epoch,
 
     # data
     "dataset_root": str(dataset_root),
@@ -304,12 +327,21 @@ scheduler = None
 scheduler_calibration = None
 
 if USE_COSINE_SCHEDULER:
+    if args.start_epoch > 0:
+        # Resuming with last_epoch != -1 requires 'initial_lr' to already be
+        # set on each param group (normally done by a scheduler on the first
+        # run); since this optimizer is freshly created, set it manually.
+        for group in optimizer.param_groups:
+            group.setdefault("initial_lr", group["lr"])
+
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
         T_max=EPOCHS,
         eta_min=1e-6,
+        last_epoch=args.start_epoch - 1 if args.start_epoch > 0 else -1,
     )
-    print("Using CosineAnnealingLR (main)")
+    print(f"Using CosineAnnealingLR (main), resumed at epoch {args.start_epoch}" if args.start_epoch
+          else "Using CosineAnnealingLR (main)")
 
 
 # -------------------------------------------------
@@ -478,7 +510,7 @@ wandb.run.summary["output_dir"] = folder_path
 # -------------------------------------------------
 # 10. Training loop (MAIN)
 # -------------------------------------------------
-for epoch in range(EPOCHS):
+for epoch in range(args.start_epoch, EPOCHS):
     model.train()
     train_metrics = one_epoch(model, train_dl, optimizer, device, cfg, desc="Training")
 
