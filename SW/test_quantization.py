@@ -29,13 +29,13 @@ files = glob.glob(
 )
 # cfg = build_config(model_cfg_path="configs/kws.yaml")
 
-cfg = OmegaConf.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_Vox/CHECKPOINTS/config.yaml')
+cfg = OmegaConf.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_Vox_11cls/CHECKPOINTS/config.yaml')
 OmegaConf.resolve(cfg)
 ds = SpikingDS(files, cfg)
 
 # Prepare model
 model = KWS(cfg).to('cuda')
-ckpt = torch.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_Vox/CHECKPOINTS/best_model_calibration.pth')
+ckpt = torch.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_Vox_11cls/CHECKPOINTS/best_model_calibration.pth')
 model.load_state_dict(ckpt)
 model.eval()
 
@@ -43,8 +43,8 @@ model.eval()
 model.quantize()
 
 # Create output directory for debug outputs
-path_debug = '/home/imperator/Code/NAS-GNN-KWS/SW/debug_Vox/debug_outputs/'
-path_parameters = '/home/imperator/Code/NAS-GNN-KWS/SW/debug_Vox/parameters/'
+path_debug = '/home/imperator/Code/NAS-GNN-KWS/SW/debug_Vox_11cls/debug_outputs/'
+path_parameters = '/home/imperator/Code/NAS-GNN-KWS/SW/debug_Vox_11cls/parameters/'
 os.makedirs(path_debug, exist_ok=True)
 os.makedirs(path_parameters, exist_ok=True)
 

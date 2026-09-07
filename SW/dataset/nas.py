@@ -9,14 +9,14 @@ from dataset.utils.detective_active_range import detect_active_range
 from dataset.utils.nas_loader import nas_loader
 
 
-# WORDS_COMM = [
-#     "yes", "no", "up", "down", "left",
-#     "right", "on", "off", "stop", "go", "unknown"
-# ]
-
 WORDS_COMM = [
-    "up", "down", "left", "right", "unknown"
+    "yes", "no", "up", "down", "left",
+    "right", "on", "off", "stop", "go", "unknown"
 ]
+
+# WORDS_COMM = [
+#     "up", "down", "left", "right", "unknown"
+# ]
 
 WORDS_ALL = [
     "backward", "bed", "bird", "cat", "dog",
