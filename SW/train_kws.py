@@ -33,6 +33,7 @@ EPOCHS_CALIBRATION = 5
 SGD_MOMENTUM = 0.9
 
 BATCH_SIZE = 2
+GRAD_ACCUM_STEPS = 8  # effective batch size = BATCH_SIZE * GRAD_ACCUM_STEPS
 NUM_WORKERS = 2
 PIN_MEMORY = True
 
@@ -94,7 +95,7 @@ parser.add_argument("--start_epoch", type=int, default=0,
 # everything unknown becomes override key=value
 args, overrides = parser.parse_known_args()
 
-dataset_root = Path(args.dataset_root) if args.dataset_root else (Path.home() / "Dataset" / "gsc_v2_32p_ok")
+dataset_root = Path(args.dataset_root) if args.dataset_root else (Path.home() / "Dataset" / "NAS_GSC" / "gsc-ok-v3")
 files = glob.glob(str(dataset_root / "*" / "*"))
 
 # Filter out anything that is not a file (defensive)
@@ -235,6 +236,8 @@ wandb_config = {
     "epochs_calibration": EPOCHS_CALIBRATION,
     "sgd_momentum": SGD_MOMENTUM,
     "batch_size": BATCH_SIZE,
+    "grad_accum_steps": GRAD_ACCUM_STEPS,
+    "effective_batch_size": BATCH_SIZE * GRAD_ACCUM_STEPS,
     "num_workers": NUM_WORKERS,
     "pin_memory": PIN_MEMORY,
 
@@ -389,8 +392,10 @@ def _timestamp_errors(conf_logits: torch.Tensor, gt_keyword: torch.Tensor):
     return dt.abs().mean(), dt.mean()
 
 
-def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
+def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None, accum_steps=1):
     training = model.training and (optimizer is not None)
+    accum_steps = max(1, int(accum_steps))
+    num_batches = len(dataloader)
 
     total_loss_conf = 0.0
     total_loss_cls = 0.0
@@ -411,7 +416,10 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
     if desc is None:
         desc = "Training" if training else "Eval"
 
-    for batch in tqdm(dataloader, desc=desc):
+    if training:
+        optimizer.zero_grad(set_to_none=True)
+
+    for step_i, batch in enumerate(tqdm(dataloader, desc=desc)):
         batch = move_to_device(batch, dev)
         conf_logits, cls_logits = model(batch)
 
@@ -462,9 +470,12 @@ def one_epoch(model, dataloader, optimizer, dev, cfg, desc=None):
         mean_signed_dt_ms = mean_signed_dt_steps * bin_width
 
         if training:
-            optimizer.zero_grad(set_to_none=True)
-            loss.backward()
-            optimizer.step()
+            (loss / accum_steps).backward()
+
+            is_last_batch = (step_i == num_batches - 1)
+            if ((step_i + 1) % accum_steps == 0) or is_last_batch:
+                optimizer.step()
+                optimizer.zero_grad(set_to_none=True)
 
         total_loss += loss.item() * B
         total_loss_conf += loss_conf.item() * B
@@ -512,7 +523,9 @@ wandb.run.summary["output_dir"] = folder_path
 # -------------------------------------------------
 for epoch in range(args.start_epoch, EPOCHS):
     model.train()
-    train_metrics = one_epoch(model, train_dl, optimizer, device, cfg, desc="Training")
+    train_metrics = one_epoch(
+        model, train_dl, optimizer, device, cfg, desc="Training", accum_steps=GRAD_ACCUM_STEPS
+    )
 
     # log LR + metrics
     cur_lr = float(optimizer.param_groups[0]["lr"])
@@ -623,7 +636,10 @@ for epoch in range(EPOCHS_CALIBRATION):
     step = calib_step_offset + epoch
 
     model.train()
-    train_metrics = one_epoch(model, train_dl, optimizer_calibration, device, cfg, desc="Calibration Train")
+    train_metrics = one_epoch(
+        model, train_dl, optimizer_calibration, device, cfg,
+        desc="Calibration Train", accum_steps=GRAD_ACCUM_STEPS,
+    )
 
     cur_lr = float(optimizer_calibration.param_groups[0]["lr"])
     wandb.log({"calib_train/lr": cur_lr}, step=step)
