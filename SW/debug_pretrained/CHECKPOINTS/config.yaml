@@ -55,7 +55,7 @@ dataset:
   cooldown_steps: 3
   mean_scale: 1.0
   std_scale: 0.5
-  low_percentage: 0.7
+  low_percentage: 0.3
   gausian_kernel_size: 7
 nas:
   num_channels: 32
