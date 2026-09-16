@@ -111,7 +111,7 @@ module feature_gen #(
 
     assign t_feature = (extended_t_average>>>32) + extended_t_average[31] + ZERO_POINT;
     assign f_feature = (extended_f_average>>>32) + extended_f_average[31] + ZERO_POINT;
-    assign p_feature = in_event.p ? 170 : 0;
+    assign p_feature = in_event.p ? 198 : 0;
 
     div_t div_t ( //32 clock latency
         .aclk                   ( clk             ),
