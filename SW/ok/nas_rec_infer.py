@@ -21,14 +21,17 @@ opal.reset_board()
 
 MAX_INPUTS = 3
 INPUTS = ['port_a']
-BASE_DIR = r"C:/Users/wikto/datasets/gsc_v2"
-OUTPUT_DIR = r"C:/Users/wikto/datasets/gsc_v2_32p_ok"
+#BASE_DIR = "/home/pwz/Music/model_ok/archive/"
+#OUTPUT_DIR = "/home/pwz/Music/datasets/gsc_v2_32p_ok"
+
+BASE_DIR = "/home/pwz/vox-populi-dataset/"
+OUTPUT_DIR = "/home/pwz/Music/datasets/vox"
 
 # os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 Fs = 48000  # frecuencia de muestreo
 okt_freq = 1e8
-GAIN = 0.8
+GAIN = 1
 
 monitortime = 0.8
 incTime = 0.2
@@ -56,15 +59,14 @@ def convert_to_aedat(input_audio_path, output_aedat_path, settings):
     opal.reset_board()
 
     time_wait_after = 0.5
-    time_wait_before = 0.1
 
     # duration = len(audio_data) / samplerate
-    duration = 1.0
+    duration = 2.0
     
-    duration = duration + time_wait_after + time_wait_before
+    duration = duration + time_wait_after
     print(f"duration: {duration}")
+    #time.sleep(max(0.0, 0.35 - time_wait_before))
     sd.play(audio_data, samplerate)
-    time.sleep(max(0.0, 0.35 - time_wait_before))
     spikes = opal.monitor(duration=duration, inputs=['port_a'])
     sd.wait()
 

@@ -19,8 +19,7 @@ sd.default.blocksize = 2048
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 BIT_FILE = os.path.join(REPO_ROOT, "HW", "vivado", "kws", "kws_system.runs", "impl_1", "ok_top_wrapper.bit")
-DATASET_ROOT = "C:/Users/wikto/datasets/gsc_v2"
-
+DATASET_ROOT = "/home/pwz/vox-populi-dataset/"
 
 CSV_DIR = "batch_analysis_all_classes"
 STATS_DIR = "stats_all_classes"
@@ -31,8 +30,8 @@ WORDS_COMM = [
 ]
 
 CLASSES_TO_TEST = ["down", "up", "go", "no", "yes", "stop", "left", "right", "on", "off"]
-NUM_SAMPLES_TO_TEST = 100
-CONFIDENCE_THRESHOLD = 170
+NUM_SAMPLES_TO_TEST = 10
+CONFIDENCE_THRESHOLD = 220
 CAPTURE_WINDOW_S = 2.0
 
 os.makedirs(CSV_DIR, exist_ok=True)

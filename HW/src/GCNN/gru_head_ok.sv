@@ -27,11 +27,18 @@ module gru_head_ok #(
     // logic [PRECISION-1:0]  zp_o [5:0] = {167,108,129,121,115,129};
     // localparam HIDDEN_IN_ZERO_POINT = 127;
 
-    logic [31:0]     multiplier [5:0] = {4225537,3952810,21661794,27436744,15035120,2833466};
-    logic [PRECISION-1:0]  zp_w [5:0] = {177,137,134,137,134,132};
-    logic [PRECISION-1:0]  zp_o [5:0] = {168,114,123,122,121,123};
+//    logic [31:0]     multiplier [5:0] = {4225537,3952810,21661794,27436744,15035120,2833466};
+//    logic [PRECISION-1:0]  zp_w [5:0] = {177,137,134,137,134,132};
+//    logic [PRECISION-1:0]  zp_o [5:0] = {168,114,123,122,121,123};
+//    localparam HIDDEN_IN_ZERO_POINT = 128;
+
+    logic [31:0]     multiplier [5:0] = {4166713,3951080,17083698,23984542,16177275,2933671};
+    logic [PRECISION-1:0]  zp_w [5:0] = {179,138,143,135,137,130};
+    logic [PRECISION-1:0]  zp_o [5:0] = {174,113,122,138,121,122};
     localparam HIDDEN_IN_ZERO_POINT = 128;
 
+// I HAVEN'T CHANGED ANYTHING BELOW THIS POINT.
+// STILL TODO: RESET AND IP CORE GENERATION.
 
     initial begin
         out_conf <= '{default:0};
@@ -483,10 +490,10 @@ module gru_head_ok #(
     hammard_ok #(
         .DIM                ( HEAD_DIM  ),
         .PRECISION          ( PRECISION ),
-        .MULTIPLIER         ( 18837578  ), //Scale r_hn (32 bit): 27429516
+        .MULTIPLIER         ( 19363114  ), //Scale r_hn (32 bit): 27429516
         .ZERO_POINT_IN_1    ( 0         ), //Output sigmoid r zero point: 0
-        .ZERO_POINT_IN_2    ( 123       ), //Output linear zero point: 129
-        .ZERO_POINT_OUT     ( 138       )  //Output r_hn zero point: 120
+        .ZERO_POINT_IN_2    ( 122       ), //Output linear zero point: 129
+        .ZERO_POINT_OUT     ( 140       )  //Output r_hn zero point: 120
     ) mul_r_hn (
         .clk            ( clk                ),
         .reset          ( reset              ),
@@ -500,10 +507,10 @@ module gru_head_ok #(
     hammard_ok #(
         .DIM                ( HEAD_DIM  ),
         .PRECISION          ( PRECISION ),
-        .MULTIPLIER         ( 17180734  ), //Scale z_h (32 bit): 17009640
+        .MULTIPLIER         ( 17091526  ), //Scale z_h (32 bit): 17009640
         .ZERO_POINT_IN_1    ( 0         ), //Output sigmoid z zero point: 0
         .ZERO_POINT_IN_2    ( 128       ), //Hidden zero point: 127
-        .ZERO_POINT_OUT     ( 126       )  //Output z_h zero point: 127
+        .ZERO_POINT_OUT     ( 127       )  //Output z_h zero point: 127
     ) mul_z_h_old (
         .clk            ( clk                   ),
         .reset          ( reset                 ),
@@ -534,9 +541,9 @@ module gru_head_ok #(
     add_vectors_rescale_ok #(
         .DIM                ( HEAD_DIM   ),
         .PRECISION          ( PRECISION  ),
-        .MULTIPLIER_IN_1    ( 33'd4210540544 ), //Scale new_h_zh (32 bit): 4252892928
-        .MULTIPLIER_IN_2    ( 33'd4189961984 ), //Scale new_h_zn (32 bit): 4248036096
-        .ZERO_POINT_IN_1    ( 126        ), //Output z_h zero point: 127
+        .MULTIPLIER_IN_1    ( 33'd4232517120 ), //Scale new_h_zh (32 bit): 4252892928
+        .MULTIPLIER_IN_2    ( 33'd4234077952 ), //Scale new_h_zn (32 bit): 4248036096
+        .ZERO_POINT_IN_1    ( 127        ), //Output z_h zero point: 127
         .ZERO_POINT_IN_2    ( 127        ), //Output z_n zero point: 127
         .ZERO_POINT_OUT     ( 128        )  //Hidden zero point: 127
     ) add_zn_zh (

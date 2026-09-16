@@ -5,7 +5,7 @@ import nas_pkg::*;
 module kws_ut;
 
     //parameter INPUT_PATH = "/home/pwz/Music/debug_outputs/input_events.txt";
-    parameter INPUT_PATH = "C:/Users/wikto/repos/NAS-GNN-KWS/HW/tb/input_events.txt";
+    parameter INPUT_PATH = "/home/pwz/Repo/SW/OK-FPL_10cls/NAS-GNN-KWS/SW/debug_Vox_11cls/debug_outputs/input_events.txt";
     parameter TIME_WINDOW = 10000; // We test only single time window
 
     logic [T_WIDTH-1:0] t;

@@ -121,6 +121,8 @@ module ok_top_wrapper (
     wire        epA0read;
     wire [31:0] epA0data;
     
+    wire [31:0] ep02wire;
+    
     wire okClk;
     
     logic [7:0] valid_cnt;
@@ -142,12 +144,14 @@ module ok_top_wrapper (
         
         .wi00_ep_dataout(ep00wire),
         .wi01_ep_dataout(ep01wire),
+        .wo20_ep_datain(ep02wire),
         
         .poa0_ep_datain(epA0data),
         .poa0_ep_read(epA0read)
     );
     
     assign rst = ep00wire[0];
+    assign ep02wire[31:12] = 0;
     wire capture_enable = ep01wire[0];
 
     wire fifo_full;
@@ -161,11 +165,12 @@ module ok_top_wrapper (
         .din({24'd0, valid_cnt, out_cls, out_conf}),
         .wr_en(out_valid & capture_enable),
         .rd_en(epA0read),
+        .rd_data_count(ep02wire[11:0]),
         .dout(epA0data),
         .full(fifo_full),
         .empty(fifo_empty)
     );
-    
+
     clk_wiz_ok clk_wiz_ok_i (
         .clk_in1_p (clk_200_p),
         .clk_in1_n (clk_200_n),

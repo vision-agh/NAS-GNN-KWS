@@ -1,10 +1,10 @@
 import os
 
-INPUT_FILE = "conv2.mem"
-OUTPUT_B = "conv2_b.mem"
-OUTPUT_W = "conv2_w.mem"
+INPUT_FILE = "conv4.mem"
+OUTPUT_B = "conv4_b.mem"
+OUTPUT_W = "conv4_w.mem"
 
-# wczytaj dane
+# load data
 with open(INPUT_FILE, "r") as f:
     lines = [line.strip() for line in f]
 
@@ -14,22 +14,22 @@ if len(lines) != 648:
 out_b = []
 out_w = []
 
-# przetwarzanie co 9 linii
+# process every 9 lines
 for i in range(0, 648, 9):
     merged = "".join(lines[i:i+9])
 
-    # ostatnie 8 znaków (32-bit HEX)
+    # last 8 characters (32-bit HEX)
     out_b.append(merged[-8:])
 
-    # reszta bez zmian
+    # the rest unchanged
     out_w.append(merged[:-8])
 
-# zapis conv2_b.mem
+# write conv2_b.mem
 with open(OUTPUT_B, "w") as f:
     for line in out_b:
         f.write(line + "\n")
 
-# zapis conv2_w.mem
+# write conv2_w.mem
 with open(OUTPUT_W, "w") as f:
     for line in out_w:
         f.write(line + "\n")

@@ -42,8 +42,8 @@
         "WI.ADDR_29": [ { "value": "0xff", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "WI.ADDR_30": [ { "value": "0xff", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "WI.ADDR_31": [ { "value": "0xff", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
-        "WO.COUNT": [ { "value": "0", "resolve_type": "user", "format": "long", "usage": "all" } ],
-        "WO.ADDR_0": [ { "value": "0xff", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
+        "WO.COUNT": [ { "value": "1", "value_src": "user", "resolve_type": "user", "format": "long", "usage": "all" } ],
+        "WO.ADDR_0": [ { "value": "0x20", "value_src": "user", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "WO.ADDR_1": [ { "value": "0xff", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "WO.ADDR_2": [ { "value": "0xff", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
         "WO.ADDR_3": [ { "value": "0xff", "resolve_type": "user", "format": "bitString", "usage": "all" } ],
@@ -589,6 +589,7 @@
         "okClk": [ { "direction": "out" } ],
         "wi00_ep_dataout": [ { "direction": "out", "size_left": "31", "size_right": "0" } ],
         "wi01_ep_dataout": [ { "direction": "out", "size_left": "31", "size_right": "0" } ],
+        "wo20_ep_datain": [ { "direction": "in", "size_left": "31", "size_right": "0" } ],
         "poa0_ep_datain": [ { "direction": "in", "size_left": "31", "size_right": "0" } ],
         "poa0_ep_read": [ { "direction": "out" } ]
       },
@@ -654,6 +655,14 @@
           "mode": "master",
           "port_maps": {
             "EP_DATAOUT": [ { "physical_name": "wi01_ep_dataout" } ]
+          }
+        },
+        "wireout20": {
+          "vlnv": "opalkelly.com:interface:wireout:1.0",
+          "abstraction_type": "opalkelly.com:interface:wireout_rtl:1.0",
+          "mode": "master",
+          "port_maps": {
+            "EP_DATAIN": [ { "physical_name": "wo20_ep_datain" } ]
           }
         },
         "pipeouta0": {
