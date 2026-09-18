@@ -25,17 +25,17 @@ def move_to_device(batch, dev):
 
 # Prepare dataset
 files = glob.glob(
-    f"/home/imperator/Dataset/NAS_GSC/vox-combine/left/jagoda_nohash_0.wav*"
+    f"/home/imperator/Dataset/NAS_GSC/vox-praga-mic-pwz-balanced/left/jagoda_nohash_0.wav*"
 )
 # cfg = build_config(model_cfg_path="configs/kws.yaml")
 
-cfg = OmegaConf.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_finetune_50_epochs_combined/CHECKPOINTS/config.yaml')
+cfg = OmegaConf.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_finetune_praga_mic/CHECKPOINTS/config.yaml')
 OmegaConf.resolve(cfg)
 ds = SpikingDS(files, cfg)
 
 # Prepare model
 model = KWS(cfg).to('cuda')
-ckpt = torch.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_finetune_50_epochs_combined/CHECKPOINTS/best_model_calibration.pth')
+ckpt = torch.load('/home/imperator/Code/NAS-GNN-KWS/SW/debug_finetune_praga_mic/CHECKPOINTS/best_model_calibration.pth')
 model.load_state_dict(ckpt)
 model.eval()
 
@@ -43,8 +43,8 @@ model.eval()
 model.quantize()
 
 # Create output directory for debug outputs
-path_debug = '/home/imperator/Code/NAS-GNN-KWS/SW/debug_finetune_50_epochs_combined/debug_outputs/'
-path_parameters = '/home/imperator/Code/NAS-GNN-KWS/SW/debug_finetune_50_epochs_combined/parameters/'
+path_debug = '/home/imperator/Code/NAS-GNN-KWS/SW/debug_finetune_praga_mic/debug_outputs/'
+path_parameters = '/home/imperator/Code/NAS-GNN-KWS/SW/debug_finetune_praga_mic/parameters/'
 os.makedirs(path_debug, exist_ok=True)
 os.makedirs(path_parameters, exist_ok=True)
 
