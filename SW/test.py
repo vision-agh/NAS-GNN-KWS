@@ -370,14 +370,14 @@ def main():
     # if not cfg_path.exists():
     #     raise FileNotFoundError(f"Missing config.yaml in: {run_dir}")
 
-    cfg = OmegaConf.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_finetune_praga_mic/CHECKPOINTS/config.yaml")
+    cfg = OmegaConf.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_pretrained_gscdv3_new10cls/CHECKPOINTS/config.yaml")
     OmegaConf.resolve(cfg)
 
     print("Configuration:")
     print(OmegaConf.to_yaml(cfg))
 
     # ---- dataset root
-    dataset_root = Path("/home/imperator/Dataset/NAS_GSC/vox-praga-mic-pwz-balanced")  # default
+    dataset_root = Path("/home/imperator/Dataset/NAS_GSC/gsc_v3_32p_ok")  # default
     train_files, val_files, test_files = build_splits(dataset_root)
     print(f"Split sizes | Train: {len(train_files)} | Val: {len(val_files)} | Test: {len(test_files)}")
 
@@ -414,7 +414,7 @@ def main():
 
     # ---- Load float checkpoint
     # print(f"Loading checkpoint: {run_dir / 'checkpoints' / 'best_model.pth'}")
-    state = torch.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_finetune_praga_mic/CHECKPOINTS/best_model.pth", map_location=device)
+    state = torch.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_pretrained_gscdv3_new10cls/CHECKPOINTS/best_model.pth", map_location=device)
     model.load_state_dict(state, strict=True)
 
     metrics = evaluate(model, dl, device, cfg, desc=f"Eval ({args.split})")
@@ -422,7 +422,7 @@ def main():
 
     # ---- Load quant checkpoint
     # print(f"Loading checkpoint: {run_dir / 'checkpoints' / 'best_model_calibration.pth'}")
-    state = torch.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_finetune_praga_mic/CHECKPOINTS/best_model_calibration.pth", map_location=device)
+    state = torch.load("/home/imperator/Code/NAS-GNN-KWS/SW/debug_pretrained_gscdv3_new10cls/CHECKPOINTS/best_model_calibration.pth", map_location=device)
     model.load_state_dict(state, strict=True)
 
     model.quantize()

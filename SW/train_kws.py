@@ -28,7 +28,7 @@ LR_CALIBRATION = 1e-4
 WEIGHT_DECAY = 1e-4
 
 USE_COSINE_SCHEDULER = True
-EPOCHS =70
+EPOCHS = 70
 EPOCHS_CALIBRATION = 5
 SGD_MOMENTUM = 0.9
 
@@ -95,7 +95,7 @@ parser.add_argument("--start_epoch", type=int, default=0,
 # everything unknown becomes override key=value
 args, overrides = parser.parse_known_args()
 
-dataset_root = Path(args.dataset_root) if args.dataset_root else (Path.home() / "Dataset" / "NAS_GSC" / "vox-praga-mic-pwz-balanced")
+dataset_root = Path(args.dataset_root) if args.dataset_root else (Path.home() / "Dataset" / "NAS_GSC" / "gsc_v2_32p_ok")
 files = glob.glob(str(dataset_root / "*" / "*"))
 
 # Filter out anything that is not a file (defensive)

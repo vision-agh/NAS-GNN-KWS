@@ -10,7 +10,7 @@ from configs.build_config import build_config
 vis_edges = False
 
 files = glob.glob(
-    f"/home/imperator/Dataset/gsc_v2_32p_ok/*/*"
+    f"/home/imperator/Dataset/NAS_GSC/vox-combine/*/*"
     # f"/home/imperator/Dataset/dataset_aedat_w_delays_parallel_32ch/*/*"
 )
 
