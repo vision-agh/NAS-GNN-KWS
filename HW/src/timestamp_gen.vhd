@@ -11,7 +11,7 @@ entity timestamp_gen is
         clk        : in std_logic;
         rst        : in std_logic;
         
-        AER_DATA   : in STD_LOGIC_VECTOR(6 downto 0);
+        AER_DATA   : in STD_LOGIC_VECTOR(F_WIDTH downto 0);
         AER_REQ    : in STD_LOGIC;
         AER_ACK    : out STD_LOGIC;
         
@@ -90,7 +90,7 @@ begin
             
             if req_falling = '1' then
                 out_t <= std_logic_vector(t_counter);
-                out_f(6 downto 0) <= AER_DATA;
+                out_f(F_WIDTH downto 0) <= AER_DATA;
                 out_valid <= '1';
             end if;
         end if;
