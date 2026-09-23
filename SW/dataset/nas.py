@@ -14,9 +14,13 @@ from dataset.utils.nas_loader import nas_loader
 #     "right", "on", "off", "stop", "go", "unknown"
 # ]
 
+# WORDS_COMM = [
+#     "up", "down", "left", "right", "backward",
+#     "forward", "one", "two", "three", "four", "unknown"
+# ]
+
 WORDS_COMM = [
-    "up", "down", "left", "right", "backward",
-    "forward", "one", "two", "three", "four", "unknown"
+    "up", "down", "left", "right", "one", "two", "three", "four", "unknown"
 ]
 
 WORDS_ALL = [
@@ -131,7 +135,7 @@ class SpikingDS(Dataset):
         
     def generate_kws_vectors(self, pos, end_time, cls):
         T = int(round(pos[:, 0].max().item() / self.cfg.dataset.bin_width)) + 1
-        cls_vec = torch.ones(T, dtype=torch.float32) * (35 if self.cfg.dataset.version == 'all' else 4)  # unknown class CHANGED HERE TO MATCH 5 CLS, should be 10
+        cls_vec = torch.ones(T, dtype=torch.float32) * (35 if self.cfg.dataset.version == 'all' else 8)  # unknown class CHANGED HERE TO MATCH 5 CLS, should be 10
         conf_vec = torch.zeros(T, dtype=torch.float32)
 
         if end_time is not None:

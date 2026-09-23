@@ -1,0 +1,101 @@
+Input scale (32 bit):
+ 38243084
+Input scale temporal normalisation (32 bit):
+ 96471008 (remember to inverse diff calculation or include change in sing)
+Input scale channel normalisation (32 bit):
+ 96471007232
+Input zero point:
+ 112
+Weight scale (32 bit):
+ 147230208
+Weight zero point:
+ 151
+Output scale (32 bit):
+ 161700080
+Output zero point:
+ 146
+M Scales (32 bit):
+ 34820868
+Input quantisation (only for first layer):
+F scale (for 32 bits):15073594798
+T scale (for 32 bits):482355
+Weight (8 bit):
+weights_conv[0] = {0, 0, 0, 0, 0};
+weights_conv[1] = {6, -80, -19, 22, 0};
+weights_conv[2] = {0, 0, 0, 0, 0};
+weights_conv[3] = {0, 0, 0, 0, 0};
+weights_conv[4] = {4, 15, 8, -44, 24};
+weights_conv[5] = {1, 20, -11, -40, 25};
+weights_conv[6] = {2, 16, 11, -4, 1};
+weights_conv[7] = {-26, 77, 0, -121, 0};
+weights_conv[8] = {-22, 1, 1, 2, 0};
+weights_conv[9] = {0, 0, 0, 0, 0};
+weights_conv[10] = {3, 2, 6, -4, 0};
+weights_conv[11] = {-22, -21, -2, -5, -1};
+weights_conv[12] = {0, 0, 0, 0, 0};
+weights_conv[13] = {1, -124, -10, 3, -1};
+weights_conv[14] = {-28, 0, 0, -6, -1};
+weights_conv[15] = {-1, -39, 0, 9, 101};
+weights_conv[16] = {25, 8, -1, 13, -2};
+weights_conv[17] = {0, 0, 0, 0, 0};
+weights_conv[18] = {0, 0, 0, 0, 0};
+weights_conv[19] = {0, 0, 0, 0, 0};
+weights_conv[20] = {33, -17, -1, 51, 0};
+weights_conv[21] = {7, 15, -8, -9, 1};
+weights_conv[22] = {0, 0, 0, 0, 0};
+weights_conv[23] = {0, 0, 0, 0, 0};
+weights_conv[24] = {-7, 6, -9, -9, 0};
+weights_conv[25] = {26, 5, 0, 6, 0};
+weights_conv[26] = {0, 0, 0, 0, 0};
+weights_conv[27] = {0, 0, 0, 0, 0};
+weights_conv[28] = {0, 0, 0, 0, 0};
+weights_conv[29] = {0, 0, 0, 0, 0};
+weights_conv[30] = {-9, -59, 14, -23, -1};
+weights_conv[31] = {0, 0, 0, 0, 0};
+weights_conv[32] = {6, 2, -2, 6, 0};
+weights_conv[33] = {0, 0, 0, 0, 0};
+weights_conv[34] = {23, 33, -2, -6, 1};
+weights_conv[35] = {14, -64, 12, -45, 0};
+weights_conv[36] = {34, -8, 0, 9, -2};
+weights_conv[37] = {0, 0, 0, 0, 0};
+weights_conv[38] = {-4, 20, -11, -1, 0};
+weights_conv[39] = {34, -1, 1, 6, 0};
+weights_conv[40] = {-28, -81, 2, 69, 5};
+weights_conv[41] = {-42, -25, 2, -51, -1};
+weights_conv[42] = {0, 0, 0, 0, 0};
+weights_conv[43] = {-6, -11, 11, -2, -1};
+weights_conv[44] = {11, 64, 1, -58, 1};
+weights_conv[45] = {-18, 23, 0, -109, -1};
+weights_conv[46] = {0, 0, 0, 0, 0};
+weights_conv[47] = {0, 0, 0, 0, 0};
+weights_conv[48] = {-10, -25, -14, 7, 0};
+weights_conv[49] = {11, 6, 4, -20, -1};
+weights_conv[50] = {0, 0, 0, 0, 0};
+weights_conv[51] = {10, -11, -13, 5, -2};
+weights_conv[52] = {0, 0, 0, 0, 0};
+weights_conv[53] = {4, -150, 11, 0, -1};
+weights_conv[54] = {-1, 16, 12, -12, -2};
+weights_conv[55] = {12, -59, -17, -64, -6};
+weights_conv[56] = {-8, 6, 10, -8, -1};
+weights_conv[57] = {-23, -7, -3, 6, -4};
+weights_conv[58] = {0, 0, 0, 0, 0};
+weights_conv[59] = {0, 0, 0, 0, 0};
+weights_conv[60] = {0, 0, 0, 0, 0};
+weights_conv[61] = {-33, 79, 0, -8, 1};
+weights_conv[62] = {0, 0, 0, 0, 0};
+weights_conv[63] = {-17, -79, -9, 12, 5};
+weights_conv[64] = {0, 0, 0, 0, 0};
+weights_conv[65] = {-3, -4, -4, -25, 16};
+weights_conv[66] = {6, 17, 2, 9, 2};
+weights_conv[67] = {9, -9, 12, 11, 0};
+weights_conv[68] = {15, -57, -8, -9, 1};
+weights_conv[69] = {6, -89, 18, 33, -2};
+weights_conv[70] = {0, 0, 0, 0, 0};
+weights_conv[71] = {0, 0, 0, 0, 0};
+
+Bias (8 bit):
+bias_conv = {0, 0, -647, -754, -220, -437, -1008, 0, -145, 0, -1977, 0, 0, 0, -1297, -195, 2021, 436, 807, 0, 94, 0, -640, 515, 0, 0, 1309, 1129, 795, 0, 746, -1739, -3150, -470, 0, -3065, 797, -1776, 0, -1050, 0, 1287, 0, 0, 0, 0, -2663, -135, 0, 0, -549, -3492, 0, 0, 0, -736, -7482, 608, 867, 0, 487, 812, 0, -1472, 1246, -997, -767, -1452, 0, 0, -545, 0};
+Input range (8 bit):
+ [-1, 0, 1]
+Output range (8 bit):
+ [-112, 0, 112]
