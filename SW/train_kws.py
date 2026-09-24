@@ -95,8 +95,13 @@ parser.add_argument("--start_epoch", type=int, default=0,
 # everything unknown becomes override key=value
 args, overrides = parser.parse_known_args()
 
-dataset_root = Path(args.dataset_root) if args.dataset_root else (Path.home() / "Dataset" / "NAS_GSC" / "gsc_v2_32p_ok")
+dataset_root = Path(args.dataset_root) if args.dataset_root else (Path.home() / "Dataset" / "NAS_GSC" / "vox-combine")
 files = glob.glob(str(dataset_root / "*" / "*"))
+
+files = [
+    f for f in glob.glob(str(dataset_root / "*" / "*"))
+    if "tree" not in f.lower()
+]
 
 # Filter out anything that is not a file (defensive)
 files = [f for f in files if Path(f).is_file()]
