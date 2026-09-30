@@ -7,6 +7,12 @@ set fp_marker "$fp_ip_dir/FrontPanel-Subsystem-v1.1.0"
 set fp_zip "$repo_root/HW/ip/fp/FrontPanel-Vivado-IP-Dist-v1.1.0.zip"
 set fp_url "https://pins.opalkelly.com/downloads/1373/download?category_id=43"
 
+# Remember the original LD_LIBRARY_PATH
+set orig_ld_path $::env(LD_LIBRARY_PATH)
+
+# Clear it for the duration of the curl call
+set ::env(LD_LIBRARY_PATH) ""
+
 if {![file exists $fp_marker]} {
     puts "FrontPanel IP not found — downloading v1.1.0..."
     file mkdir $fp_ip_dir
@@ -21,6 +27,10 @@ if {![file exists $fp_marker]} {
     file delete $fp_zip
     puts "FrontPanel IP installed."
 }
+
+
+# Restore the original value for the rest of the script/Vivado
+set ::env(LD_LIBRARY_PATH) $orig_ld_path
 
 file mkdir $proj_dir
 cd $proj_dir

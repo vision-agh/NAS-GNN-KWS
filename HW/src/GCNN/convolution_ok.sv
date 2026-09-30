@@ -54,13 +54,13 @@ module convolution_ok #(
     localparam IDLE = 2'd0;
     localparam CONV = 2'd1;
     localparam SAVE = 2'd2;
-    logic [1:0] state, state_MRR, state_RM, state_mul_in = IDLE;
+    logic [1:0] state, state_MRR, state_RM, state_mul_in, state_RM2 = IDLE;
     logic [$clog2(F_RADIUS):0]     iter_counter, iter_counter_MRR, iter_counter_RM2, iter_counter_RM, iter_counter_acc;
     logic [$clog2(OUTPUT_DIM)-1:0] outdim_counter, outdim_counter_mul_out, outdim_counter_compare, outdim_counter_acc;
 
     delay_module #(
         .N        ( $clog2(F_RADIUS)+1 ),
-        .DELAY    ( 12                 )
+        .DELAY    ( 13                 )
     ) delay_counter (
         .clk   ( clk              ),
         .idata ( iter_counter     ),
@@ -69,7 +69,7 @@ module convolution_ok #(
 
     delay_module #(
         .N        ( $clog2(OUTPUT_DIM)+1 ),
-        .DELAY    ( 10                   )
+        .DELAY    ( 11                   )
     ) delay_out_counter (
         .clk   ( clk                    ),
         .idata ( outdim_counter         ),
@@ -125,7 +125,8 @@ module convolution_ok #(
                 event_reg.valid <= 1;
             end
             state_MRR <= state;
-            state_RM <= state_MRR;
+            state_RM2 <= state_MRR;
+            state_RM <= state_RM2;
             state_mul_in <= state_RM;
             
             iter_counter_MRR <= iter_counter;
@@ -198,14 +199,14 @@ module convolution_ok #(
     generate
         for (a = 0; a < INPUT_DIM; a++) begin : port_a_assign
             always @(posedge clk) begin
-                features_a_temp[a][PRECISION_IN-1 : 0] = (iter_counter_RM != 0) ? {douta[((PRECISION_IN)*(a+1))-1 : (PRECISION_IN*a)]} :
+                features_a_temp[a][PRECISION_IN-1 : 0] <= (iter_counter_RM2 != 0) ? {douta[((PRECISION_IN)*(a+1))-1 : (PRECISION_IN*a)]} :
                                                                                   features_reg[a];
                 features_a[a] <= (ena_RM || (iter_counter_RM == 0)) ? features_a_temp[a] : '0;
             end
         end
         for (b = 0; b < INPUT_DIM; b++) begin : port_b_assign
             always @(posedge clk) begin
-                features_b_temp[b][PRECISION_IN-1 : 0] = {doutb[((PRECISION_IN)*(b+1))-1 : (PRECISION_IN*b)]};
+                features_b_temp[b][PRECISION_IN-1 : 0] <= {doutb[((PRECISION_IN)*(b+1))-1 : (PRECISION_IN*b)]};
                 features_b[b] <= enb_RM ? features_b_temp[b] : '0;
             end
         end       
@@ -240,6 +241,8 @@ module convolution_ok #(
     logic [31:0]            single_bias1_reg;
     logic [PRECISION_OUT-1:0] single_weight1 [INPUT_DIM+1:0];
     logic [31:0]            single_bias1;
+    logic [PRECISION_OUT-1:0] single_weight2 [INPUT_DIM+1:0];
+    logic [31:0]            single_bias2;
 
     single_port_memory_weights #(
         .AWIDTH   ( $clog2(OUTPUT_DIM)               ),
@@ -264,8 +267,10 @@ module convolution_ok #(
 
     always @(posedge clk) begin
         single_bias1_reg <= weight_mem1[31:0];
-        single_weight1 <= single_weight1_reg;
-        single_bias1 <= single_bias1_reg;
+        single_weight2 <= single_weight1_reg;
+        single_bias2 <= single_bias1_reg;
+        single_bias1 <= single_bias2;
+        single_weight1 <= single_weight2;
     end
 
     logic [PRECISION_OUT-1:0] output_mat_a1;
@@ -314,7 +319,7 @@ module convolution_ok #(
 
     delay_module #(
         .N        ( 1   ),
-        .DELAY    ( 9   )
+        .DELAY    ( 10   )
     ) delay_ena (
         .clk   ( clk                            ),
         .idata ( ena || (iter_counter_MRR == 0) ),
@@ -323,7 +328,7 @@ module convolution_ok #(
 
     delay_module #(
         .N        ( 1  ),
-        .DELAY    ( 9  )
+        .DELAY    ( 10  )
     ) delay_enb (
         .clk   ( clk         ),
         .idata ( enb         ),

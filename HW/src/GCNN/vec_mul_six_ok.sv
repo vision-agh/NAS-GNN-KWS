@@ -13,7 +13,8 @@ module vec_mul_six_ok #(
 );
 
     logic [31:0] result_reg [5:0];
-    logic [31:0] result_reg2;
+    logic [31:0] result_reg2a;
+    logic [31:0] result_reg2b;
     logic [31:0] sum_reg;
     logic [31:0] sum_reg2;
 
@@ -32,13 +33,13 @@ module vec_mul_six_ok #(
                       features[5] : sum_reg;
 
             sum_reg2 <= sum_reg;
-            result_reg2 <= result_reg[0] + 
+            result_reg2a <= result_reg[0] + 
                       result_reg[1] + 
-                      result_reg[2] + 
-                      result_reg[3] +
+                      result_reg[2];
+            result_reg2b <= result_reg[3] +
                       result_reg[4] + 
                       result_reg[5];
-            result <= result_reg2;
+            result <= result_reg2a + result_reg2b;
             sum <= sum_reg2;
         end
     endgenerate

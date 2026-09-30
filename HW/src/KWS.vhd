@@ -13,7 +13,7 @@ entity KWS is
         WEIGHT      : integer := 32;
         DECAY_SHIFT : integer := 8;
         PRECISION_GEN  : integer := 8 ;
-        CLS_NUM : integer := 11
+        CLS_NUM : integer := 7
     );
     Port (
         clock_200    : in std_logic;
@@ -30,6 +30,8 @@ entity KWS is
         cnn_class    : out STD_LOGIC_VECTOR((PRECISION_GEN*CLS_NUM)-1 downto 0)
     );
 end KWS;
+
+
 
 architecture Behavioral of KWS is
 

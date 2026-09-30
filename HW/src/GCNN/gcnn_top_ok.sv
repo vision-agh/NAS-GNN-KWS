@@ -31,34 +31,33 @@ module gcnn_top_ok #(
     localparam string INIT_PATH_CONV4_B = "conv4_b.mem";
     localparam string INIT_PATH_HEAD    = "head.mem";
 
-    localparam CONV1_MULTIPLIER_DIFF_T = 73024600;
-    localparam CONV1_MULTIPLIER_OUT = 40539932;
-    localparam CONV1_ZERO_POINT_IN = 85;
+    localparam CONV1_MULTIPLIER_DIFF_T = 96522352;
+    localparam CONV1_MULTIPLIER_OUT = 31301352;
+    localparam CONV1_ZERO_POINT_IN = 112;
     localparam CONV1_ZERO_POINT_OUT = 141;
-    localparam CONV1_ZERO_POINT_WEIGHT = 149;      
-    //localparam logic [7:0] CONV1_SCALE_IN [10:0] = {0, 20, 40, 59, 79, 198, 178, 158, 139, 119, 99};
-    localparam logic [7:0] CONV1_SCALE_IN [10:0] = {0, 17, 34, 51, 68, 170, 153, 136, 119, 102, 85};
+    localparam CONV1_ZERO_POINT_WEIGHT = 148;      
+    localparam logic [7:0] CONV1_SCALE_IN [10:0] = {0,22,45,67,90,224,202,179,157,134,112};
 
-    localparam CONV2_MULTIPLIER_DIFF_T = 22750648;
-    localparam CONV2_MULTIPLIER_OUT = 94549432;
+    localparam CONV2_MULTIPLIER_DIFF_T = 19581934;
+    localparam CONV2_MULTIPLIER_OUT = 48502208;
     localparam CONV2_ZERO_POINT_IN = 141;
-    localparam CONV2_ZERO_POINT_OUT = 125;
-    localparam CONV2_ZERO_POINT_WEIGHT = 73;       
-    localparam logic [7:0] CONV2_SCALE_IN [10:0] = {115,120,125,130,136,167,162,157,152,146,141};
+    localparam CONV2_ZERO_POINT_OUT = 174;
+    localparam CONV2_ZERO_POINT_WEIGHT = 181;       
+    localparam logic [7:0] CONV2_SCALE_IN [10:0] = {118,123,127,132,136,164,159,155,150,146,141};
 
-    localparam CONV3_MULTIPLIER_DIFF_T = 16436608;
-    localparam CONV3_MULTIPLIER_OUT = 51924164;
-    localparam CONV3_ZERO_POINT_IN = 125;
-    localparam CONV3_ZERO_POINT_OUT = 153;
-    localparam CONV3_ZERO_POINT_WEIGHT = 121;       
-    localparam logic [7:0] CONV3_SCALE_IN [10:0] = {106,110,114,117,121,144,140,136,133,129,125};
+    localparam CONV3_MULTIPLIER_DIFF_T = 18999938;
+    localparam CONV3_MULTIPLIER_OUT = 48120532;
+    localparam CONV3_ZERO_POINT_IN = 174;
+    localparam CONV3_ZERO_POINT_OUT = 140;
+    localparam CONV3_ZERO_POINT_WEIGHT = 140;       
+    localparam logic [7:0] CONV3_SCALE_IN [10:0] = {152,156,161,165,170,196,192,187,183,178,174};
 
-    localparam CONV4_MULTIPLIER_DIFF_T = 14870247;
-    localparam CONV4_MULTIPLIER_OUT = 41957212;
-    localparam CONV4_ZERO_POINT_IN = 153;
-    localparam CONV4_ZERO_POINT_OUT = 133;
-    localparam CONV4_ZERO_POINT_WEIGHT = 135;   
-    localparam logic [7:0] CONV4_SCALE_IN [10:0] = {136,139,143,146,150,170,167,163,160,156,153};
+    localparam CONV4_MULTIPLIER_DIFF_T = 20262502;
+    localparam CONV4_MULTIPLIER_OUT = 46952216;
+    localparam CONV4_ZERO_POINT_IN = 140;
+    localparam CONV4_ZERO_POINT_OUT = 148;
+    localparam CONV4_ZERO_POINT_WEIGHT = 144;   
+    localparam logic [7:0] CONV4_SCALE_IN [10:0] = {116,121,126,131,135,164,159,154,149,145,140};
 
     event_type                   event_to_conv1, event_to_conv2, event_to_conv3, event_to_conv4, event_to_pool;
     event_type                   event_to_buff1, event_to_buff2, event_to_buff3, event_to_buff4;
@@ -181,7 +180,7 @@ module gcnn_top_ok #(
 //        end
 //        CLK_CNT <= CLK_CNT+1;
 //        // 1sek = 200000000
-//        if (CLK_CNT > 1_000_000) begin
+//        if (CLK_CNT > 100_000) begin
 //            $fclose(fd);
 //            $finish;
 //        end
@@ -252,8 +251,9 @@ module gcnn_top_ok #(
 //        end
 //        CLK_CNT <= CLK_CNT+1;
 //        // 1sek = 200000000
-//        if (CLK_CNT > 1_000_000) begin
+//        if (CLK_CNT > 100_000) begin
 //            $fclose(fd2);
+//            $fclose(fd);
 //            $finish;
 //        end
 //    end
@@ -308,7 +308,7 @@ module gcnn_top_ok #(
 //    integer fd;
 //    int CLK_CNT = 0;
 //    initial begin
-//        fd = $fopen("output4.txt", "w");
+//        fd = $fopen("output3.txt", "w");
 //        if (fd == 0) begin
 //            $display("Nie można otworzyć pliku!");
 //            $finish;

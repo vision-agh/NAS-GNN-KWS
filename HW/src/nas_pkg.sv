@@ -12,7 +12,7 @@ package nas_pkg;
     parameter PRECISION_CONV2  = 8;                    
     parameter PRECISION_CONV3  = 8;                    
     parameter PRECISION_CONV4  = 8;                    
-    parameter CLS_NUM = 11;
+    parameter CLS_NUM = 7;
 
     parameter T_WIDTH  = 32; //Max of 1000000
     parameter T_DIFF_WIDTH  = 15; //Max of 20000
@@ -41,9 +41,9 @@ package nas_pkg;
     } edge_type;
 
     parameter DELTA_T_WIDTH = 15; //max value of 20000
-    parameter GEN_MULTIPLIER_T = 365123;
-    parameter [63:0] GEN_MULTIPLIER_F = 64'd11410094566; // (add 2^32)
-    parameter GEN_ZERO_POINT = 85;
+    parameter GEN_MULTIPLIER_T = 482612;
+    parameter [63:0] GEN_MULTIPLIER_F = 64'd15081617698; // (add 2^32)
+    parameter GEN_ZERO_POINT = 112;
 
     // LIF parameters
     parameter DECAY_SHIFT = 8;
@@ -59,7 +59,7 @@ package nas_pkg;
 //            48, 48, 48, 48, 48, 48, 48, 48
 //        };
     const int thresholds [NUM_CHANNEL-1:0] = '{
-            2, 33, 33, 34, 35, 36, 37, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 54, 55, 56, 57, 59, 60, 61, 63, 64
+            32, 33, 33, 34, 35, 36, 37, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 54, 55, 56, 57, 59, 60, 61, 63, 64
         };
 
 endpackage
