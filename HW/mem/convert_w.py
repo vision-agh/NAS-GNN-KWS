@@ -1,8 +1,8 @@
 import os
 
-INPUT_FILE = "conv4.mem"
-OUTPUT_B = "conv4_b.mem"
-OUTPUT_W = "conv4_w.mem"
+INPUT_FILE = "conv2.mem"
+OUTPUT_B = "conv2_b.mem"
+OUTPUT_W = "conv2_w.mem"
 
 # wczytaj dane
 with open(INPUT_FILE, "r") as f:
